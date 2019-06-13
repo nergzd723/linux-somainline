@@ -101,6 +101,7 @@ struct vadc_channel_prop {
  * @dev: pointer to struct device.
  * @base: base address for the ADC peripheral.
  * @nchannels: number of VADC channels.
+ * @ratio_range: ratiometric range for ref points.
  * @chan_props: array of VADC channel properties.
  * @iio_chans: array of IIO channels specification.
  * @are_ref_measured: are reference points measured.
@@ -114,6 +115,7 @@ struct vadc_priv {
 	struct device		 *dev;
 	u16			 base;
 	unsigned int		 nchannels;
+	unsigned int		 ratio_range;
 	struct vadc_channel_prop *chan_props;
 	struct iio_chan_spec	 *iio_chans;
 	bool			 are_ref_measured;
@@ -355,7 +357,7 @@ static int vadc_measure_ref_points(struct vadc_priv *vadc)
 	u16 read_1, read_2;
 	int ret;
 
-	vadc->graph[VADC_CALIB_RATIOMETRIC].dx = VADC_RATIOMETRIC_RANGE;
+	vadc->graph[VADC_CALIB_RATIOMETRIC].dx = vadc->ratio_range;
 	vadc->graph[VADC_CALIB_ABSOLUTE].dx = VADC_ABSOLUTE_RANGE_UV;
 
 	prop = vadc_get_channel(vadc, VADC_REF_1250MV);
@@ -885,6 +887,11 @@ static int vadc_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 
+	if (of_device_is_compatible(node, "qcom,spmi-vadc-8998"))
+		vadc->ratio_range = VADC_RATIOMETRIC_RANGE_8998;
+	else
+		vadc->ratio_range = VADC_RATIOMETRIC_RANGE;
+
 	irq_eoc = platform_get_irq(pdev, 0);
 	if (irq_eoc < 0) {
 		if (irq_eoc == -EPROBE_DEFER || irq_eoc == -EINVAL)
@@ -918,6 +925,7 @@ static int vadc_probe(struct platform_device *pdev)
 
 static const struct of_device_id vadc_match_table[] = {
 	{ .compatible = "qcom,spmi-vadc" },
+	{ .compatible = "qcom-spmi-vadc-8998" },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, vadc_match_table);
