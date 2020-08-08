@@ -263,10 +263,17 @@
 
 &qusb2phy {
 	status = "okay";
+
+	vdd-supply = <&vreg_l1b_0p925>;
+	vdda-pll-supply = <&vreg_l10a_1p8>;
+	vdda-phy-dpdm-supply = <&vreg_l7b_3p125>;
 };
 
 &remoteproc_mss {
 	firmware-name = "mba.mbn", "modem.mdt";
+
+	cx-supply = <&vreg_s3b_s4b_0p87>;
+	mx-supply = <&vreg_s5b_0p915>;
 };
 
 &sdhc_1 {
@@ -275,20 +282,33 @@
 	mmc-ddr-1_8v;
 	/* SoMC Nile platform's eMMC doesn't support HS200 mode */
 	mmc-hs400-1_8v;
+
+	/*
+	 * The SDHCI driver REALLY doesn't like
+	 * the fact that the vmmc regulator isn't 1.8V
+	 * flat.. but the eMMC works without regulators
+	 * specified.
+	 * vmmc-supply = <&vreg_l4b_29p5>;
+	 * vqmmc-supply = <&vreg_l8a_1p8>;
+	 */
 };
 
 &sdhc_2 {
 	status = "okay";
+
+	/*
+	 * See above.
+	 * vmmc-supply = <&vreg_l5b_29p5>;
+	 * vqmmc-supply = <&vreg_l2b_2p95>;
+	 */
 };
 
 &wifi {
 	status = "okay";
-	/*
-	vdd-0.8-cx-mx-supply = <&pm660_l5>;
-	vdd-1.8-xo-supply = <&pm660_l9_pin_ctrl>;
-	vdd-1.3-rfa-supply = <&pm660_l6_pin_ctrl>;
-	vdd-3.3-ch0-supply = <&pm660_l19_pin_ctrl>;
-	*/
+	vdd-0.8-cx-mx-supply = <&vreg_l5a_0p848>;
+	vdd-1.8-xo-supply = <&vreg_l9a_1p8>;
+	vdd-1.3-rfa-supply = <&vreg_l6a_1p3>;
+	vdd-3.3-ch0-supply = <&vreg_l19a_3p3>;
 };
 
 &rpm_requests {
@@ -308,20 +328,20 @@
 		vdd_bob-supply = <&vph_pwr>;
 
 		vreg_s1b_1p125: s1b {
-			regulator-min-microvolt = <350000>;
-			regulator-max-microvolt = <1355000>;
+			regulator-min-microvolt = <1125000>;
+			regulator-max-microvolt = <1125000>;
 		};
 		vreg_s2b_1p05: s2b {
-			regulator-min-microvolt = <350000>;
-			regulator-max-microvolt = <1355000>;
+			regulator-min-microvolt = <1050000>;
+			regulator-max-microvolt = <1050000>;
 		};
 		vreg_s3b_s4b_0p87: s3b {
-			regulator-min-microvolt = <350000>;
-			regulator-max-microvolt = <1355000>;
+			/* Unused */
+			status = "disabled";
 		};
-		vreg_s5b_0p915: s5b {
-			regulator-min-microvolt = <350000>;
-			regulator-max-microvolt = <1355000>;
+		vreg_s5b_0p915: s5b { /* MX */
+			/* Unused */
+			status = "disabled";
 		};
 
 		vreg_l1b_0p925: l1b {
@@ -357,12 +377,12 @@
 			regulator-max-microvolt = <3400000>;
 		};
 		vreg_l9b_0p87: l9b {
-			regulator-min-microvolt = <1808000>;
-			regulator-max-microvolt = <2960000>;
+			/* Unused */
+			status = "disabled";
 		};
 		vreg_l10b_0p915: l10b {
-			regulator-min-microvolt = <1808000>;
-			regulator-max-microvolt = <2960000>;
+			/* Unused */
+			status = "disabled";
 		};
 		vreg_bob: bob {
 			regulator-min-microvolt = <3300000>;
@@ -387,16 +407,16 @@
 		vdd_l15_l16_l17_l18_l19-supply = <&vreg_bob>;
 
 		vreg_s1a_ftapc0: s1a {
-			regulator-min-microvolt = <568000>;
-			regulator-max-microvolt = <1172000>;
+			/* Unused */
+			status = "disabled";
 		};
 		vreg_s2a_ftapc1: s2a {
-			regulator-min-microvolt = <568000>;
-			regulator-max-microvolt = <1172000>;
+			/* Unused */
+			status = "disabled";
 		};
 		vreg_s3a_hfapc1: s3a {
-			regulator-min-microvolt = <568000>;
-			regulator-max-microvolt = <1172000>;
+			/* Unused */
+			status = "disabled";
 		};
 		vreg_s4a_2p04: s4a {
 			regulator-min-microvolt = <1805000>;
@@ -408,7 +428,7 @@
 		};
 		vreg_s6a_0p87: s6a {
 			regulator-min-microvolt = <504000>;
-			regulator-max-microvolt = <1028000>;
+			regulator-max-microvolt = <992000>;
 		};
 
 		vreg_l1a_1p225: l1a {
@@ -468,16 +488,16 @@
 			regulator-max-microvolt = <2950000>;
 		};
 		vreg_l16a_2p7: l16a {
-			regulator-min-microvolt = <2700000>;
-			regulator-max-microvolt = <2700000>;
+			/* Unused */
+			status = "disabled";
 		};
 		vreg_l17a_1p8: l17a {
 			regulator-min-microvolt = <1650000>;
 			regulator-max-microvolt = <2950000>;
 		};
-		vreg_l18a_2p85: l18a {
-			regulator-min-microvolt = <2805000>;
-			regulator-max-microvolt = <2805000>;
+		vreg_l18a_1v8: l18a {
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
 		};
 		vreg_l19a_3p3: l19a {
 			regulator-min-microvolt = <3200000>;
