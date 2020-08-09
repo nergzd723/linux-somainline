@@ -54,8 +54,8 @@
 		compatible = "regulator-fixed";
 		regulator-name = "VBAT";
 
-		regulator-min-microvolt = <3800000>;
-		regulator-max-mixrovolt = <4250000>;
+		regulator-min-microvolt = <4000000>;
+		regulator-max-microvolt = <4000000>;
 		regulator-always-on;
 		regulator-boot-on;
 	};
@@ -271,9 +271,6 @@
 
 &remoteproc_mss {
 	firmware-name = "mba.mbn", "modem.mdt";
-
-	cx-supply = <&vreg_s3b_s4b_0p87>;
-	mx-supply = <&vreg_s5b_0p915>;
 };
 
 &sdhc_1 {
@@ -331,59 +328,75 @@
 			regulator-min-microvolt = <1125000>;
 			regulator-max-microvolt = <1125000>;
 		};
+
 		vreg_s2b_1p05: s2b {
 			regulator-min-microvolt = <1050000>;
 			regulator-max-microvolt = <1050000>;
 		};
+
 		vreg_s3b_s4b_0p87: s3b {
 			/* Unused */
 			status = "disabled";
 		};
-		vreg_s5b_0p915: s5b { /* MX */
+
+		/* s4b is inaccessible / doesn't exist */
+
+		vreg_s5b_0p915: s5b {
 			/* Unused */
 			status = "disabled";
 		};
 
+		/* LDOs */
 		vreg_l1b_0p925: l1b {
 			regulator-min-microvolt = <800000>;
 			regulator-max-microvolt = <925000>;
 		};
+
 		vreg_l2b_2p95: l2b {
 			regulator-min-microvolt = <350000>;
 			regulator-max-microvolt = <3100000>;
 		};
+
 		vreg_l3b_3p0: l3b {
 			regulator-min-microvolt = <1710000>;
 			regulator-max-microvolt = <3600000>;
 		};
+
 		vreg_l4b_29p5: l4b {
 			regulator-min-microvolt = <1700000>;
 			regulator-max-microvolt = <2950000>;
 		};
+
 		vreg_l5b_29p5: l5b {
 			regulator-min-microvolt = <1721000>;
 			regulator-max-microvolt = <3600000>;
 		};
+
 		vreg_l6b_3p3: l6b {
 			regulator-min-microvolt = <1700000>;
 			regulator-max-microvolt = <3300000>;
 		};
+
 		vreg_l7b_3p125: l7b {
 			regulator-min-microvolt = <2700000>;
 			regulator-max-microvolt = <3125000>;
 		};
+
 		vreg_l8b_3p3: l8b {
 			regulator-min-microvolt = <2800000>;
 			regulator-max-microvolt = <3400000>;
 		};
+
 		vreg_l9b_0p87: l9b {
 			/* Unused */
 			status = "disabled";
 		};
+
 		vreg_l10b_0p915: l10b {
 			/* Unused */
 			status = "disabled";
 		};
+
 		vreg_bob: bob {
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3600000>;
@@ -396,7 +409,7 @@
 		vdd_s1-supply = <&vph_pwr>;
 		vdd_s2-supply = <&vph_pwr>;
 		vdd_s3-supply = <&vph_pwr>;
-		vdd_s4-supply = <&vph_pwr>; 
+		vdd_s4-supply = <&vph_pwr>;
 		vdd_s5-supply = <&vph_pwr>;
 		vdd_s6-supply = <&vph_pwr>;
 
@@ -410,95 +423,118 @@
 			/* Unused */
 			status = "disabled";
 		};
+
 		vreg_s2a_ftapc1: s2a {
 			/* Unused */
 			status = "disabled";
 		};
+
 		vreg_s3a_hfapc1: s3a {
 			/* Unused */
 			status = "disabled";
 		};
+
 		vreg_s4a_2p04: s4a {
 			regulator-min-microvolt = <1805000>;
 			regulator-max-microvolt = <2040000>;
 		};
+
 		vreg_s5a_1p35: s5a {
 			regulator-min-microvolt = <1224000>;
 			regulator-max-microvolt = <1350000>;
 		};
+
 		vreg_s6a_0p87: s6a {
 			regulator-min-microvolt = <504000>;
 			regulator-max-microvolt = <992000>;
 		};
 
+		/* LDOs */
 		vreg_l1a_1p225: l1a {
 			regulator-min-microvolt = <1150000>;
 			regulator-max-microvolt = <1250000>;
 		};
+
 		vreg_l2a_1p0: l2a {
 			regulator-min-microvolt = <950000>;
 			regulator-max-microvolt = <1010000>;
 		};
+
 		vreg_l3a_1p0: l3a {
 			regulator-min-microvolt = <950000>;
 			regulator-max-microvolt = <1010000>;
 		};
+
 		vreg_l5a_0p848: l5a {
 			regulator-min-microvolt = <525000>;
 			regulator-max-microvolt = <950000>;
 		};
+
 		vreg_l6a_1p3: l6a {
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <1370000>;
 		};
+
 		vreg_l7a_1p2: l7a {
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <1200000>;
 		};
+
 		vreg_l8a_1p8: l8a {
 			regulator-min-microvolt = <1750000>;
 			regulator-max-microvolt = <1900000>;
 		};
+
 		vreg_l9a_1p8: l9a {
 			regulator-min-microvolt = <1750000>;
 			regulator-max-microvolt = <1900000>;
 		};
+
 		vreg_l10a_1p8: l10a {
 			regulator-min-microvolt = <1780000>;
 			regulator-max-microvolt = <1950000>;
 		};
+
 		vreg_l11a_1p8: l11a {
 			regulator-min-microvolt = <1780000>;
 			regulator-max-microvolt = <1950000>;
 		};
+
 		vreg_l12a_1p8: l12a {
 			regulator-min-microvolt = <1780000>;
 			regulator-max-microvolt = <1950000>;
 		};
+
 		vreg_l13a_1p8: l13a {
 			regulator-min-microvolt = <1780000>;
 			regulator-max-microvolt = <1950000>;
 		};
+
 		vreg_l14a_1p8: l14a {
 			regulator-min-microvolt = <1710000>;
 			regulator-max-microvolt = <1900000>;
 		};
+
 		vreg_l15a_1p8: l15a {
 			regulator-min-microvolt = <1650000>;
 			regulator-max-microvolt = <2950000>;
 		};
+
 		vreg_l16a_2p7: l16a {
 			/* Unused */
 			status = "disabled";
 		};
+
 		vreg_l17a_1p8: l17a {
 			regulator-min-microvolt = <1650000>;
 			regulator-max-microvolt = <2950000>;
 		};
+
 		vreg_l18a_1v8: l18a {
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1800000>;
 		};
+
 		vreg_l19a_3p3: l19a {
 			regulator-min-microvolt = <3200000>;
 			regulator-max-microvolt = <3400000>;
