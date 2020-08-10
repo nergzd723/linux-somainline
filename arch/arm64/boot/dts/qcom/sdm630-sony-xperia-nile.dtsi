@@ -481,8 +481,8 @@
 		};
 
 		vreg_l8a_1p8: l8a {
-			regulator-min-microvolt = <1784000>;
-			regulator-max-microvolt = <1896000>;
+			regulator-min-microvolt = <1696000>;
+			regulator-max-microvolt = <1952000>;
 		};
 
 		vreg_l9a_1p8: l9a {
