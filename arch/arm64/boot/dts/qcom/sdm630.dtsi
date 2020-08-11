@@ -1301,6 +1301,7 @@
 				 * 775MHz is only available on default speed bin
 				 * or 0xA2 (speed bin 1).
 				 */
+#if 0
 				opp-775000000 {
 					opp-hz = /bits/ 64 <775000000>;
 					opp-supported-hw = <0xA2>;
@@ -1329,15 +1330,17 @@
 					opp-hz = /bits/ 64 <240000000>;
 					opp-supported-hw = <0xFF>;
 				};
+#endif
 				opp-160000000 {
 					opp-hz = /bits/ 64 <160000000>;
 					opp-supported-hw = <0xFF>;
 				};
 			};
-
+/*
 			zap-shader {
 				memory-region = <&zap_shader_region>;
 			};
+*/
 		};
 
 		adreno_smmu: iommu@5040000 {
@@ -1981,6 +1984,9 @@
 
 			qcom,smem-states = <&adsp_smp2p_out 0>;
 			qcom,smem-state-names = "stop";
+
+			power-domains = <&rpmpd SDM660_VDDCX>;
+			power-domain-names = "cx";
 
 			glink-edge {
 				interrupts = <GIC_SPI 157 IRQ_TYPE_EDGE_RISING>;

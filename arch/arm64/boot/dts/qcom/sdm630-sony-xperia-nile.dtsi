@@ -216,6 +216,10 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 
+	power-domains = <&mmcc MDSS_GDSC>;
+	vdd-supply = <&vreg_l1b_0p925>;
+	vdda-supply = <&vreg_l1a_1p225>;
+
 	panel: panel@0 {
 		reg = <0>;
 
@@ -337,12 +341,12 @@
 		vreg_s3b_s4b_0p87: s3b { /* VDD_CX */
 			//regulator-min-microvolt = <355000>;
 			/* HACK: Set it to at least 0.870V until we can scale it */
-/*
+
 			regulator-min-microvolt = <870000>;
 			regulator-max-microvolt = <955000>;
-			regulator-boot-on;
-*/
-			status = "disabled";
+//			regulator-boot-on;
+
+//			status = "disabled";
 		};
 
 		/* s4b is inaccessible / doesn't exist */
@@ -350,18 +354,19 @@
 		vreg_s5b_0p915: s5b { /* VDD_MX */
 			//regulator-min-microvolt = <525000>;
 			/* HACK: Set it to at least 0.915V until we can scale it */
-/*
+
 			regulator-min-microvolt = <915000>;
 			regulator-max-microvolt = <955000>;
-			regulator-boot-on;
-*/
-			status = "disabled";
+//			regulator-boot-on;
+
+//			status = "disabled";
 		};
 
 		/* LDOs */
 		vreg_l1b_0p925: l1b {
-			regulator-min-microvolt = <800000>;
+			regulator-min-microvolt = <880000>;
 			regulator-max-microvolt = <928000>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l2b_2p95: l2b {
@@ -449,6 +454,7 @@
 		vreg_s4a_2p04: s4a {
 			regulator-min-microvolt = <1805000>;
 			regulator-max-microvolt = <2040000>;
+			regulator-allow-set-load;
 		};
 
 		vreg_s5a_1p35: s5a {
@@ -463,8 +469,10 @@
 
 		/* LDOs */
 		vreg_l1a_1p225: l1a {
-			regulator-min-microvolt = <1152000>;
+			//regulator-min-microvolt = <1152000>;
+			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <1250000>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l2a_1p0: l2a {
@@ -485,6 +493,7 @@
 		vreg_l6a_1p3: l6a {
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <1368000>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l7a_1p2: l7a {
@@ -500,11 +509,13 @@
 		vreg_l9a_1p8: l9a {
 			regulator-min-microvolt = <1784000>;
 			regulator-max-microvolt = <1896000>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l10a_1p8: l10a {
 			regulator-min-microvolt = <1784000>;
 			regulator-max-microvolt = <1944000>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l11a_1p8: l11a {
@@ -550,6 +561,7 @@
 		vreg_l19a_3p3: l19a {
 			regulator-min-microvolt = <3200000>;
 			regulator-max-microvolt = <3400000>;
+			regulator-allow-set-load;
 		};
 	};
 };
@@ -598,4 +610,8 @@
 &usb3_dwc3 {
 	dr_mode = "peripheral";
 	extcon = <&extcon_usb>;
+};
+
+&adreno_gpu {
+	status = "disabled";
 };
