@@ -153,8 +153,10 @@ CONFIG_PCI=y
 CONFIG_PCIE_QCOM=y
 CONFIG_DEVTMPFS=y
 CONFIG_DEVTMPFS_MOUNT=y
-CONFIG_EXTRA_FIRMWARE="qcom/a508_zap.b02 qcom/a508_zap.elf qcom/a508_zap.mdt"
-# qcom/a512_zap.b00 qcom/a512_zap.b01 qcom/a512_zap.b02 qcom/a512_zap.elf qcom/a512_zap.mdt qcom/a530v1_pfp.fw qcom/a530v1_pm4.fw qcom/a530v2_seq.fw2 qcom/a530v3_gpmu.fw2 qcom/a530v3_seq.fw2 qcom/a530_gpmu.fw2 qcom/a530_pfp.fw qcom/a530_pm4.fw qcom/a540_gpmu.fw2"
+CONFIG_EXTRA_FIRMWARE="qcom/a508_zap.b02 qcom/a508_zap.elf qcom/a508_zap.mdt qcom/a530_gpmu.fw2 qcom/a530_pfp.fw qcom/a530_pm4.fw"
+# qcom/a540_gpmu.fw2"
+# qcom/a512_zap.b00 qcom/a512_zap.b01 qcom/a512_zap.b02 qcom/a512_zap.elf qcom/a512_zap.mdt qcom/a530v1_pfp.fw
+# qcom/a530v1_pm4.fw qcom/a530v2_seq.fw2 qcom/a530v3_gpmu.fw2 qcom/a530v3_seq.fw
 CONFIG_EXTRA_FIRMWARE_DIR="../firmware/"
 CONFIG_FW_LOADER_USER_HELPER=y
 CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y

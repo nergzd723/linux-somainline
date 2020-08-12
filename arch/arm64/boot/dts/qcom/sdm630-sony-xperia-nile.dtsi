@@ -212,7 +212,7 @@
 };
 
 &blsp1_uart2 {
-	status = "okay";
+	status = "disabled";
 };
 
 &blsp2_uart1 {
