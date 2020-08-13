@@ -26,7 +26,7 @@
 		#size-cells = <2>;
 		ranges;
 
-		stdout-path = "framebuffer0";
+		//stdout-path = "framebuffer0";
 
 		framebuffer0: framebuffer@9d400000 {
 			compatible = "simple-framebuffer";
@@ -612,6 +612,8 @@
 	extcon = <&extcon_usb>;
 };
 
+/*
 &adreno_gpu {
 	status = "disabled";
 };
+*/

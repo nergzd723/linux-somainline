@@ -349,13 +349,14 @@ struct msm_gpu *adreno_load_gpu(struct drm_device *dev)
 	/* Make sure pm runtime is active and reset any previous errors */
 	pm_runtime_set_active(&pdev->dev);
 
+/*
 	ret = pm_runtime_get_sync(&pdev->dev);
 	if (ret < 0) {
 		pm_runtime_put_sync(&pdev->dev);
 		DRM_DEV_ERROR(dev->dev, "Couldn't power up the GPU: %d\n", ret);
 		return NULL;
 	}
-
+*/
 	mutex_lock(&dev->struct_mutex);
 	ret = msm_gpu_hw_init(gpu);
 	mutex_unlock(&dev->struct_mutex);
