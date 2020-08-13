@@ -1,7 +1,13 @@
+CONFIG_ANDROID=y
 CONFIG_ANDROID_BINDER_IPC=y
 # CONFIG_ANDROID_BINDERFS is not set
 CONFIG_QFMT_V1=y
 CONFIG_QFMT_V2=y
+CONFIG_SECURITY=y
+CONFIG_SECURITY_NETWORK=y
+CONFIG_SECURITY_SELINUX=y
+# CONFIG_DEFAULT_SECURITY_SELINUX=y
+CONFIG_LSM="selinux"
 
 CONFIG_SYSVIPC=y
 CONFIG_POSIX_MQUEUE=y
@@ -153,7 +159,7 @@ CONFIG_PCI=y
 CONFIG_PCIE_QCOM=y
 CONFIG_DEVTMPFS=y
 CONFIG_DEVTMPFS_MOUNT=y
-CONFIG_EXTRA_FIRMWARE="qcom/a508_zap.b02 qcom/a508_zap.elf qcom/a508_zap.mdt qcom/a530_gpmu.fw2 qcom/a530_pfp.fw qcom/a530_pm4.fw"
+CONFIG_EXTRA_FIRMWARE="qcom/a508_zap.b00 qcom/a508_zap.b01 qcom/a508_zap.b02 qcom/a508_zap.elf qcom/a508_zap.mdt qcom/a530_gpmu.fw2 qcom/a530_pfp.fw qcom/a530_pm4.fw"
 # qcom/a540_gpmu.fw2"
 # qcom/a512_zap.b00 qcom/a512_zap.b01 qcom/a512_zap.b02 qcom/a512_zap.elf qcom/a512_zap.mdt qcom/a530v1_pfp.fw
 # qcom/a530v1_pm4.fw qcom/a530v2_seq.fw2 qcom/a530v3_gpmu.fw2 qcom/a530v3_seq.fw
@@ -591,7 +597,6 @@ CONFIG_NLS_CODEPAGE_437=y
 CONFIG_NLS_ISO8859_1=y
 CONFIG_SECURITY=y
 CONFIG_SECURITYFS=y
-CONFIG_LSM="lockdown,yama,loadpin,safesetid,integrity"
 CONFIG_CRYPTO_SEQIV=y
 CONFIG_CRYPTO_SHA512=y
 CONFIG_CRYPTO_ZSTD=y
