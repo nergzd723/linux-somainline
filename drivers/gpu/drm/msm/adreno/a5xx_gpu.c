@@ -18,6 +18,9 @@ static void a5xx_dump(struct msm_gpu *gpu);
 
 #define GPU_PAS_ID 13
 
+#include <linux/delay.h>
+#define PRINT_DELAY(a) pr_err(a); msleep(500);
+
 static void a5xx_flush(struct msm_gpu *gpu, struct msm_ringbuffer *ring)
 {
 	struct adreno_gpu *adreno_gpu = to_adreno_gpu(gpu);
@@ -508,6 +511,8 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 	u32 bit = 0, merciu_size = 0;
 	int ret;
 
+PRINT_DELAY("HW_INIT!\n");
+
 	gpu_write(gpu, REG_A5XX_VBIF_ROUND_ROBIN_QOS_ARB, 0x00000003);
 
 	if (adreno_is_a540(adreno_gpu))
@@ -542,7 +547,7 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 		gpu_write(gpu, REG_A5XX_RBBM_INTERFACE_HANG_MASK_CNTL18,
 			0xFFFFFFFF);
 	}
-
+PRINT_DELAY("FAULT DET\n");
 	/* Enable fault detection */
 	gpu_write(gpu, REG_A5XX_RBBM_INTERFACE_HANG_INT_CNTL,
 		(1 << 30) | 0xFFFF);
@@ -572,6 +577,8 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 		0x00100000 + adreno_gpu->gmem - 1);
 	gpu_write(gpu, REG_A5XX_UCHE_GMEM_RANGE_MAX_HI, 0x00000000);
 
+PRINT_DELAY("MEQ MERCIU ROQ\n");
+
 	if (adreno_is_a508(adreno_gpu) || adreno_is_a509(adreno_gpu) ||
 	    adreno_is_a512(adreno_gpu) || adreno_is_a540(adreno_gpu))
 		merciu_size = 0x400;
@@ -592,6 +599,8 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 		gpu_write(gpu, REG_A5XX_CP_ROQ_THRESHOLDS_1, 0x40201B16);
 	}
 
+PRINT_DELAY("ECO CONTROL\n");
+
 	if (adreno_is_a508(adreno_gpu))
 		gpu_write(gpu, REG_A5XX_PC_DBG_ECO_CNTL,
 			  (0x100 << 11 | 0x100 << 22));
@@ -605,6 +614,8 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 
 	if (adreno_gpu->info->quirks & ADRENO_QUIRK_TWO_PASS_USE_WFI)
 		gpu_rmw(gpu, REG_A5XX_PC_DBG_ECO_CNTL, 0, (1 << 8));
+
+//bah... gpu_write(gpu, REG_A5XX_PC_DBG_ECO_CNTL, 0xc0200100);
 
 	/* Enable USE_RETENTION_FLOPS */
 	gpu_write(gpu, REG_A5XX_CP_CHICKEN_DBG, 0x02000000);
@@ -625,9 +636,10 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 	if (adreno_is_a510(adreno_gpu))
 		gpu_rmw(gpu, REG_A5XX_RB_DBG_ECO_CNTL, (1 << 11), 0);
 
+PRINT_DELAY("ENABLE HWCG\n");
 	/* Enable HWCG */
 	a5xx_set_hwcg(gpu, true);
-
+PRINT_DELAY("DONE\n");
 	gpu_write(gpu, REG_A5XX_RBBM_AHB_CNTL2, 0x0000003F);
 
 	/* Set the highest bank bit */
@@ -645,7 +657,7 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 
 	/* Protect registers from the CP */
 	gpu_write(gpu, REG_A5XX_CP_PROTECT_CNTL, 0x00000007);
-
+PRINT_DELAY("RBBM\n");
 	/* RBBM */
 	gpu_write(gpu, REG_A5XX_CP_PROTECT(0), ADRENO_PROTECT_RW(0x04, 4));
 	gpu_write(gpu, REG_A5XX_CP_PROTECT(1), ADRENO_PROTECT_RW(0x08, 8));
@@ -653,7 +665,7 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 	gpu_write(gpu, REG_A5XX_CP_PROTECT(3), ADRENO_PROTECT_RW(0x20, 32));
 	gpu_write(gpu, REG_A5XX_CP_PROTECT(4), ADRENO_PROTECT_RW(0x40, 64));
 	gpu_write(gpu, REG_A5XX_CP_PROTECT(5), ADRENO_PROTECT_RW(0x80, 64));
-
+PRINT_DELAY("CONTENTPROTECT\n");
 	/* Content protect */
 	gpu_write(gpu, REG_A5XX_CP_PROTECT(6),
 		ADRENO_PROTECT_RW(REG_A5XX_RBBM_SECVID_TSB_TRUSTED_BASE_LO,
@@ -678,6 +690,7 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 	/* UCHE */
 	gpu_write(gpu, REG_A5XX_CP_PROTECT(16), ADRENO_PROTECT_RW(0xE80, 16));
 
+PRINT_DELAY("SPECIAL CONTENT PROTECT\n");
 	if (adreno_is_a508(adreno_gpu) || adreno_is_a509(adreno_gpu) ||
 	    adreno_is_a510(adreno_gpu) || adreno_is_a512(adreno_gpu) ||
 	    adreno_is_a530(adreno_gpu))
@@ -717,34 +730,35 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 		gpu_rmw(gpu, REG_A5XX_VPC_DBG_ECO_CNTL, 0, BIT(23));
 		gpu_rmw(gpu, REG_A5XX_HLSQ_DBG_ECO_CNTL, BIT(18), 0);
 	}
-
+PRINT_DELAY("GENERIC HW INIT\n");
 	ret = adreno_hw_init(gpu);
 	if (ret)
 		return ret;
-
+PRINT_DELAY("PREEMPTION INIT\n");
 	a5xx_preempt_hw_init(gpu);
-
+PRINT_DELAY("OK\n");
 	if (!(adreno_is_a508(adreno_gpu) || adreno_is_a509(adreno_gpu) ||
 	      adreno_is_a510(adreno_gpu) || adreno_is_a512(adreno_gpu)))
 		a5xx_gpmu_ucode_init(gpu);
-
+PRINT_DELAY("MICROCODE INIT\n");
 	ret = a5xx_ucode_init(gpu);
 	if (ret)
 		return ret;
-
+PRINT_DELAY("MICROCODE INIT OK\n");
 	/* Disable the interrupts through the initial bringup stage */
 	gpu_write(gpu, REG_A5XX_RBBM_INT_0_MASK, A5XX_INT_MASK);
 
 	/* Clear ME_HALT to start the micro engine */
 	gpu_write(gpu, REG_A5XX_CP_PFP_ME_CNTL, 0);
+PRINT_DELAY("ME INIT\n");
 	ret = a5xx_me_init(gpu);
 	if (ret)
 		return ret;
-
+PRINT_DELAY("POWER INIT\n");
 	ret = a5xx_power_init(gpu);
 	if (ret)
 		return ret;
-
+PRINT_DELAY("OK\n");
 	/*
 	 * Send a pipeline event stat to get misbehaving counters to start
 	 * ticking correctly
@@ -766,6 +780,8 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 	 * guessed wrong then access to the RBBM_SECVID_TRUST_CNTL register will
 	 * be blocked and a permissions violation will soon follow.
 	 */
+PRINT_DELAY("ZAP ZAP ZZZZAP\n");
+PRINT_DELAY("ZAPPING ZAPPING ZAPPING\n");
 	ret = a5xx_zap_shader_init(gpu);
 	if (!ret) {
 		OUT_PKT7(gpu->rb[0], CP_SET_SECURE_MODE, 1);
@@ -787,10 +803,10 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 	} else {
 		return ret;
 	}
-
+PRINT_DELAY("STARTING PREEMPTION\n");
 	/* Last step - yield the ringbuffer */
 	a5xx_preempt_start(gpu);
-
+PRINT_DELAY("OK\n");
 	return 0;
 }
 
@@ -1543,6 +1559,6 @@ struct msm_gpu *a5xx_gpu_init(struct drm_device *dev)
 
 	/* Set up the preemption specific bits and pieces for each ringbuffer */
 	a5xx_preempt_init(gpu);
-
+pr_err("GPU INIT OK\n");
 	return gpu;
 }

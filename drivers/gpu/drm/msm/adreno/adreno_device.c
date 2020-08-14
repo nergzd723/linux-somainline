@@ -10,6 +10,10 @@
 
 #define ANY_ID 0xff
 
+
+#include <linux/delay.h>
+#define PRINT_DELAY(a) pr_err(a); msleep(500);
+
 bool hang_debug = false;
 MODULE_PARM_DESC(hang_debug, "Dump registers when hang is detected (can be slow!)");
 module_param_named(hang_debug, hang_debug, bool, 0600);
@@ -464,7 +468,7 @@ static int adreno_bind(struct device *dev, struct device *master, void *data)
 		config.rev.minor, config.rev.patchid);
 
 	priv->is_a2xx = config.rev.core == 2;
-
+PRINT_DELAY("GPU INIT\n");
 	gpu = info->init(drm);
 	if (IS_ERR(gpu)) {
 		dev_warn(drm->dev, "failed to load adreno gpu\n");

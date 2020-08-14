@@ -18,6 +18,9 @@
 #include <linux/devcoredump.h>
 #include <linux/sched/task.h>
 
+#include <linux/delay.h>
+#define PRINT_DELAY(a) pr_err(a); msleep(500);
+
 /*
  * Power Management:
  */
@@ -755,7 +758,7 @@ void msm_gpu_submit(struct msm_gpu *gpu, struct msm_gem_submit *submit,
 	WARN_ON(!mutex_is_locked(&dev->struct_mutex));
 
 	pm_runtime_get_sync(&gpu->pdev->dev);
-
+PRINT_DELAY("EXECUTING MSM_GPU_HW_INIT\n");
 	msm_gpu_hw_init(gpu);
 
 	submit->seqno = ++ring->seqno;
@@ -893,7 +896,7 @@ int msm_gpu_init(struct drm_device *drm, struct platform_device *pdev,
 
 	msm_devfreq_init(gpu);
 
-
+pr_err("CREATE ASPACE\n");
 	gpu->aspace = gpu->funcs->create_address_space(gpu, pdev);
 
 	if (gpu->aspace == NULL)
@@ -938,6 +941,9 @@ int msm_gpu_init(struct drm_device *drm, struct platform_device *pdev,
 	}
 
 	gpu->nr_rings = nr_rings;
+
+pr_err("MSM GPU INIT OK\n"); msleep(500);
+	gpu->needs_hw_init = true;
 
 	return 0;
 

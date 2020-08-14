@@ -221,16 +221,16 @@ static const struct rpmpd_desc qcs404_desc = {
 };
 
 /* sdm660 RPM Power domains */
-DEFINE_RPMPD_PAIR(sdm660, vddcx, vddcx_ao, RWCX, LEVEL, 0);
+DEFINE_RPMPD_PAIR(sdm660, vddcx, vddcx_ao, RWCX, LEVEL, 0); /* PM660L S3 + S4 VDD_CX */
 DEFINE_RPMPD_VFL(sdm660, vddcx_vfl, RWCX, 0);
 
-DEFINE_RPMPD_PAIR(sdm660, vddmx, vddmx_ao, RWMX, LEVEL, 0);
+DEFINE_RPMPD_PAIR(sdm660, vddmx, vddmx_ao, RWMX, LEVEL, 0); /* PM660L S5 VDD_MX */
 DEFINE_RPMPD_VFL(sdm660, vddmx_vfl, RWMX, 0);
 
-DEFINE_RPMPD_LEVEL(sdm660, vdd_ssccx, RWSC, 0);
+DEFINE_RPMPD_LEVEL(sdm660, vdd_ssccx, RWSC, 0); /* PM660L L9 VDD_SSC_CX */
 DEFINE_RPMPD_VFL(sdm660, vdd_ssccx_vfl, RWSC, 0);
 
-DEFINE_RPMPD_LEVEL(sdm660, vdd_sscmx, RWSM, 0);
+DEFINE_RPMPD_LEVEL(sdm660, vdd_sscmx, RWSM, 0); /* PM660L L10 VDD_SSC_MX */
 DEFINE_RPMPD_VFL(sdm660, vdd_sscmx_vfl, RWSM, 0);
 
 static struct rpmpd *sdm660_rpmpds[] = {

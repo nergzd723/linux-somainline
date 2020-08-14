@@ -186,6 +186,7 @@
 
 &adsp_pil {
 	firmware-name = "adsp.mdt";
+	status = "disabled";
 };
 
 &blsp_i2c1 {
@@ -316,17 +317,26 @@
 	vdd-3.3-ch0-supply = <&vreg_l19a_3p3>;
 };
 
+/*
+    s3                            0    0      0  normal   908mV     0mA     0mV     0mV
+    s4                            0    0      0  normal   908mV     0mA     0mV     0mV
+    s5                            0    0      0  normal   920mV     0mA     0mV     0mV
+*/
+
 &pm660l_spmi_regulators {
+/*
 	vdd_cx: s3 {
 		regulator-min-microvolt = <870000>;
 		regulator-max-microvolt = <955000>;
-//		regulator-boot-on;
-	};		
+		//regulator-boot-on;
+	};
+
 	vdd_mx: s5 {
 		regulator-min-microvolt = <915000>;
 		regulator-max-microvolt = <955000>;
-//		regulator-boot-on;
+	///	regulator-boot-on;
 	};
+*/
 };
 
 &rpm_requests {
@@ -631,8 +641,19 @@
 	extcon = <&extcon_usb>;
 };
 
-/*
-&adreno_gpu {
-	status = "disabled";
+
+&adreno_smmu {
+	/* HACK: GX GDSC parent is CX. We need to bring up CX for SMMU
+	 *       but we need both up for Adreno. On the other hand, we
+	 *       need to manage the GX rpmpd domain in the adreno driver.
+	 *       Enable CX/GX GDSCs here so that we can manage the GX
+	 *       RPM Power Domain in the Adreno driver.
+	 */
+	power-domains = <&gpucc GPU_GX_GDSC>;
 };
-*/
+
+&adreno_gpu {
+	power-domains = <&rpmpd SDM660_VDDMX>;
+
+//	status = "disabled";
+};

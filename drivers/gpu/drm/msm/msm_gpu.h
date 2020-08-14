@@ -7,6 +7,8 @@
 #ifndef __MSM_GPU_H__
 #define __MSM_GPU_H__
 
+#define ADRENODBG
+
 #include <linux/clk.h>
 #include <linux/interconnect.h>
 #include <linux/regulator/consumer.h>
