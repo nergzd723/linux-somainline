@@ -1304,7 +1304,7 @@
 				};
 				opp-465000000 {
 					opp-hz = /bits/ 64 <465000000>;
-\					opp-level = <RPM_SMD_LEVEL_SVS_PLUS>;
+					opp-level = <RPM_SMD_LEVEL_SVS_PLUS>;
 					opp-supported-hw = <0xFF>;
 				};
 				opp-370000000 {
@@ -1312,15 +1312,17 @@
 					opp-level = <RPM_SMD_LEVEL_SVS>;
 					opp-supported-hw = <0xFF>;
 				};
+#endif
 				opp-240000000 {
 					opp-hz = /bits/ 64 <240000000>;
-					opp-level = <RPM_SMD_LEVEL_LOW_SVS>;
+					//opp-level = <RPM_SMD_LEVEL_LOW_SVS>;
+					opp-level = <RPM_SMD_LEVEL_NOM>;
 					opp-supported-hw = <0xFF>;
 				};
-#endif
 				opp-160000000 {
 					opp-hz = /bits/ 64 <160000000>;
-					opp-level = <RPM_SMD_LEVEL_MIN_SVS>;
+					//opp-level = <RPM_SMD_LEVEL_MIN_SVS>;
+					opp-level = <RPM_SMD_LEVEL_NOM>;
 					opp-supported-hw = <0xFF>;
 				};
 			};

@@ -22,11 +22,12 @@
 	/* Novatek touchscreen - see the note in -nile. dtsi */
 };
 
+/*
 &framebuffer0 {
 	reg = <0 0x9d400000 0 (2520 * 1080 * 4)>;
 	height = <2520>;
 };
-
+*/
 &gpio_keys {
 	/delete-node/ camera_focus;
 	/delete-node/ camera_snapshot;

@@ -2641,12 +2641,14 @@ static struct gdsc camss_cpp_gdsc = {
 static struct gdsc bimc_smmu_gdsc = {
 	.gdscr = 0xe020,
 	.gds_hw_ctrl = 0xe024,
+	.cxcs = (unsigned int []){ 0xe008 },
+	.cxc_count = 1,
 	.pd = {
 		.name = "bimc_smmu",
 	},
 	.pwrsts = PWRSTS_OFF_ON,
 	.parent = &bimc_smmu_gdsc.pd,
-	.flags = HW_CTRL,
+	.flags = VOTABLE,
 };
 */
 
