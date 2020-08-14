@@ -113,8 +113,8 @@ static struct clk_rcg2_gfx3d gfx3d_clk_src = {
 			.name = "gfx3d_clk_src",
 			.parent_data = gpucc_parent_data_1,
 			.num_parents = 4,
-			.ops = &clk_gfx3d_ops,
-			.flags = CLK_SET_RATE_PARENT | CLK_OPS_PARENT_ENABLE,
+			.ops = &clk_rcg2_ops, //&clk_gfx3d_ops,
+			.flags = CLK_IS_CRITICAL, //CLK_SET_RATE_PARENT | CLK_OPS_PARENT_ENABLE,
 		},
 	},
 	.hws = (struct clk_hw*[]){

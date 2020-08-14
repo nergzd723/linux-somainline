@@ -12,6 +12,8 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/gpio-keys.h>
 
+#define EARLY_FRAMEBUFFER
+
 / {
 	/* required for bootloader to select correct board */
 	qcom,msm-id = <318 0>;
@@ -20,17 +22,19 @@
 
 	/* This part enables graphical output via bootloader-enabled display */
 	chosen {
-//		bootargs = "earlycon=tty0 console=tty0 clk_ignore_unused";
-
+#ifdef EARLY_FRAMEBUFFER
+		bootargs = "earlycon=tty0 console=tty0 clk_ignore_unused";
+#else
 		bootargs = "clk_ignore_unused";
-
+#endif
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
 
-		//stdout-path = "framebuffer0";
+#ifdef EARLY_FRAMEBUFFER
+		stdout-path = "framebuffer0";
 
-/*
+
 		framebuffer0: framebuffer@9d400000 {
 			compatible = "simple-framebuffer";
 			reg = <0 0x9d400000 0 (1920 * 1080 * 4)>;
@@ -51,7 +55,7 @@
 				 <&mmcc MDSS_ESC0_CLK>,
 				 <&xo_board>;
 		};
-*/
+#endif
 	};
 
 	board_vbat: vbat-regulator {
@@ -294,19 +298,17 @@
 	 * the fact that the vmmc regulator isn't 1.8V
 	 * flat.. but the eMMC works without regulators
 	 * specified.
-	 * vmmc-supply = <&vreg_l4b_29p5>;
-	 * vqmmc-supply = <&vreg_l8a_1p8>;
 	 */
+	 vmmc-supply = <&vreg_l4b_29p5>;
+	 vqmmc-supply = <&vreg_l8a_1p8>;
+	 
 };
 
 &sdhc_2 {
 	status = "okay";
 
-	/*
-	 * See above.
-	 * vmmc-supply = <&vreg_l5b_29p5>;
-	 * vqmmc-supply = <&vreg_l2b_2p95>;
-	 */
+	vmmc-supply = <&vreg_l5b_29p5>;
+	vqmmc-supply = <&vreg_l2b_2p95>; 
 };
 
 &wifi {
@@ -399,8 +401,16 @@
 		};
 
 		vreg_l2b_2p95: l2b {
-			regulator-min-microvolt = <350000>;
-			regulator-max-microvolt = <3100000>;
+			/* This regulator supports 1.648 - 3.104V on this board
+			 * but we set a max voltage of anything less than 2.7V
+			 * to satisfy a condition in sdhci.c that will disable
+			 * 3.3V SDHCI signaling, which happens to be not really
+			 * supported on the Xperia Nile/Ganges platform.
+			 */
+			regulator-min-microvolt = <1648000>;
+			regulator-max-microvolt = <2696000>;
+			/* regulator-max-microvolt = <3104000>; */
+			regulator-allow-set-load;
 		};
 
 		vreg_l3b_3p0: l3b {
@@ -411,11 +421,13 @@
 		vreg_l4b_29p5: l4b {
 			regulator-min-microvolt = <1700000>;
 			regulator-max-microvolt = <2952000>;
+		//	regulator-allow-set-load;
 		};
 
 		vreg_l5b_29p5: l5b {
 			regulator-min-microvolt = <1720000>;
 			regulator-max-microvolt = <3600000>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l6b_3p3: l6b {
@@ -655,5 +667,5 @@
 &adreno_gpu {
 	power-domains = <&rpmpd SDM660_VDDMX>;
 
-//	status = "disabled";
+	status = "disabled";
 };

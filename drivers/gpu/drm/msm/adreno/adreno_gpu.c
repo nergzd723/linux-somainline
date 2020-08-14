@@ -562,7 +562,7 @@ bool adreno_idle(struct msm_gpu *gpu, struct msm_ringbuffer *ring)
 	/* TODO maybe we need to reset GPU here to recover from hang? */
 	DRM_ERROR("%s: timeout waiting to drain ringbuffer %d rptr/wptr = %X/%X\n",
 		gpu->name, ring->id, get_rptr(adreno_gpu, ring), wptr);
-return true;
+
 	return false;
 }
 
@@ -1011,10 +1011,10 @@ int adreno_gpu_init(struct drm_device *drm, struct platform_device *pdev,
 
 	pm_runtime_set_autosuspend_delay(&pdev->dev,
 		adreno_gpu->info->inactive_period);
-//	pm_runtime_use_autosuspend(&pdev->dev);
-//	pm_runtime_enable(&pdev->dev);
+	pm_runtime_use_autosuspend(&pdev->dev);
+	pm_runtime_enable(&pdev->dev);
 
-	pm_runtime_forbid(&pdev->dev);
+	//pm_runtime_forbid(&pdev->dev);
 	//pm_runtime_disable(&pdev->dev);
 
 	return msm_gpu_init(drm, pdev, &adreno_gpu->base, &funcs->base,
