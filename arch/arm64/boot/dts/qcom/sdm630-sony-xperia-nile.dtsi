@@ -289,9 +289,14 @@
 &sdhc_1 {
 	status = "okay";
 
+	supports-cqe;
+
 	mmc-ddr-1_8v;
+
+
 	/* SoMC Nile platform's eMMC doesn't support HS200 mode */
 	mmc-hs400-1_8v;
+	mmc-hs400-enhanced-strobe;
 
 	/*
 	 * The SDHCI driver REALLY doesn't like
@@ -299,8 +304,8 @@
 	 * flat.. but the eMMC works without regulators
 	 * specified.
 	 */
-	//vmmc-supply = <&vreg_l4b_29p5>;
-	//vqmmc-supply = <&vreg_l8a_1p8>;
+	vmmc-supply = <&vreg_l4b_29p5>;
+	vqmmc-supply = <&vreg_l8a_1p8>;
 
 };
 
@@ -593,18 +598,12 @@
 		};
 
 		vreg_l8a_1p8: l8a {
-			//regulator-min-microvolt = <1696000>;
-			//regulator-min-microvolt = <1792000>;
-			//regulator-max-microvolt = <1808000>;
-			//regulator-max-microvolt = <1952000>;
-
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-enable-ramp-delay = <250>;
 			regulator-ramp-delay = <0>;
-		//	regulator-boot-on;
-		//	regulator-always-on;
-		//	regulator-allow-set-load;
+			regulator-system-load = <325000>;
+			regulator-allow-set-load;
 		};
 
 
