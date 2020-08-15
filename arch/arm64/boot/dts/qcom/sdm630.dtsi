@@ -1545,8 +1545,6 @@
 					  required-opps = <&rpmpd_opp_nom>;
 				 };
 			};
-		  };
-
 		};
 
 		sdhc_1: sdhci@c0c4000 {
