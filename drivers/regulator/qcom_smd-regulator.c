@@ -552,10 +552,10 @@ static const struct regulator_desc pm660_ftsmps = {
 
 static const struct regulator_desc pm660_hfsmps = {
 	.linear_ranges = (struct linear_range[]) {
-		REGULATOR_LINEAR_RANGE(320000, 0, 215, 8000),
+		REGULATOR_LINEAR_RANGE(320000, 0, 216, 8000),
 	},
 	.n_linear_ranges = 1,
-	.n_voltages = 216,
+	.n_voltages = 217,
 	.ops = &rpm_smps_ldo_ops,
 };
 
@@ -955,6 +955,18 @@ static const struct rpm_regulator_data rpm_pm660_regulators[] = {
 	{ "l5a", QCOM_SMD_RPM_LDOA, 5, &pm660_ht_nldo, "vdd_l5" },
 	{ "l6a", QCOM_SMD_RPM_LDOA, 6, &pm660_ht_nldo, "vdd_l1_l6_l7" },
 	{ "l7a", QCOM_SMD_RPM_LDOA, 7, &pm660_ht_nldo, "vdd_l1_l6_l7" },
+
+
+        { "l8a", QCOM_SMD_RPM_LDOA, 8, &pm660_ht_nldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
+        { "l9a", QCOM_SMD_RPM_LDOA, 9, &pm660_ht_nldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
+        { "l10a", QCOM_SMD_RPM_LDOA, 10, &pm660_ht_nldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
+        { "l11a", QCOM_SMD_RPM_LDOA, 11, &pm660_ht_nldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
+        { "l12a", QCOM_SMD_RPM_LDOA, 12, &pm660_ht_nldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
+        { "l13a", QCOM_SMD_RPM_LDOA, 13, &pm660_ht_nldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
+        { "l14a", QCOM_SMD_RPM_LDOA, 14, &pm660_ht_nldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
+
+
+/*
 	{ "l8a", QCOM_SMD_RPM_LDOA, 8, &pm660_ht_lvpldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
 	{ "l9a", QCOM_SMD_RPM_LDOA, 9, &pm660_ht_lvpldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
 	{ "l10a", QCOM_SMD_RPM_LDOA, 10, &pm660_ht_lvpldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
@@ -962,6 +974,7 @@ static const struct rpm_regulator_data rpm_pm660_regulators[] = {
 	{ "l12a", QCOM_SMD_RPM_LDOA, 12, &pm660_ht_lvpldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
 	{ "l13a", QCOM_SMD_RPM_LDOA, 13, &pm660_ht_lvpldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
 	{ "l14a", QCOM_SMD_RPM_LDOA, 14, &pm660_ht_lvpldo, "vdd_l8_l9_l10_l11_l12_l13_l14" },
+*/
 	{ "l15a", QCOM_SMD_RPM_LDOA, 15, &pm660_pldo440, "vdd_l15_l16_l17_l18_l19" },
 	{ "l16a", QCOM_SMD_RPM_LDOA, 16, &pm660_pldo440, "vdd_l15_l16_l17_l18_l19" },
 	{ "l17a", QCOM_SMD_RPM_LDOA, 17, &pm660_pldo440, "vdd_l15_l16_l17_l18_l19" },

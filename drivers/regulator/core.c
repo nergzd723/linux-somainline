@@ -42,7 +42,8 @@
 #define rdev_info(rdev, fmt, ...)					\
 	pr_info("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
 #define rdev_dbg(rdev, fmt, ...)					\
-	pr_debug("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
+	pr_err("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
+//	pr_debug("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
 
 static DEFINE_WW_CLASS(regulator_ww_class);
 static DEFINE_MUTEX(regulator_nesting_mutex);
@@ -405,11 +406,11 @@ err_node_put:
 static struct device_node *of_get_regulator(struct device *dev, const char *supply)
 {
 	struct device_node *regnode = NULL;
-	char prop_name[32]; /* 32 is max size of property name */
+	char prop_name[64]; /* 32 is max size of property name */
 
 	dev_dbg(dev, "Looking up %s-supply from device tree\n", supply);
 
-	snprintf(prop_name, 32, "%s-supply", supply);
+	snprintf(prop_name, 64, "%s-supply", supply);
 	regnode = of_parse_phandle(dev->of_node, prop_name, 0);
 
 	if (!regnode) {
