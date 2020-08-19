@@ -154,6 +154,7 @@ struct clk_rcg2 {
 #define to_clk_rcg2(_hw) container_of(to_clk_regmap(_hw), struct clk_rcg2, clkr)
 
 struct clk_rcg2_gfx3d {
+	u8 div;
 	struct clk_rcg2 rcg;
 	struct clk_hw **hws;
 };

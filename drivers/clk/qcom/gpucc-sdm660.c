@@ -104,6 +104,7 @@ static const struct clk_parent_data gpucc_parent_data_1[] = {
 };
 
 static struct clk_rcg2_gfx3d gfx3d_clk_src = {
+	.div = 2,
 	.rcg = {
 		.cmd_rcgr = 0x1070,
 		.mnd_width = 0,
@@ -118,7 +119,7 @@ static struct clk_rcg2_gfx3d gfx3d_clk_src = {
 		},
 	},
 	.hws = (struct clk_hw*[]){
-		&gpu_pll0_pll_out_main.clkr.hw,
+		&gpucc_cxo_clk.clkr.hw,
 		&gpu_pll0_pll_out_main.clkr.hw,
 		&gpu_pll1_pll_out_main.clkr.hw,
 	}
@@ -244,12 +245,15 @@ static struct gdsc gpu_cx_gdsc = {
 static struct gdsc gpu_gx_gdsc = {
 	.gdscr = 0x1094,
 	.clamp_io_ctrl = 0x130,
+	.resets = (unsigned int []){ GPU_GX_BCR },
+	.reset_count = 1,
 	.pd = {
 		.name = "gpu_gx",
 	},
 	.parent = &gpu_cx_gdsc.pd,
 	.pwrsts = PWRSTS_OFF_ON,
-	.flags = CLAMP_IO | AON_RESET,
+	.flags = CLAMP_IO | SW_RESET | AON_RESET,
+	//.supply = "vdd-gx";
 };
 
 static struct gdsc *gpucc_sdm660_gdscs[] = {

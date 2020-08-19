@@ -730,7 +730,7 @@ static int clk_gfx3d_determine_rate(struct clk_hw *hw,
 	struct clk_rate_request parent_req = { };
 	struct clk_rcg2_gfx3d *cgfx = to_clk_rcg2_gfx3d(hw);
 	struct clk_hw *xo;
-	unsigned long p0_rate;
+	unsigned long request, p0_rate;
 	int ret;
 
 	/*
@@ -748,11 +748,15 @@ static int clk_gfx3d_determine_rate(struct clk_hw *hw,
 		return 0;
 	}
 
+	request = req->rate;
+	if (cgfx->div > 1)
+		parent_req.rate = request = request * cgfx->div;
+
 	/* This has to be a fixed rate PLL */
 	p0_rate = clk_hw_get_rate(cgfx->hws[0]);
 
-	parent_req.rate = req->rate = min(req->rate, p0_rate);
-	if (req->rate == p0_rate) {
+	//parent_req.rate = req->rate = min(request, p0_rate);
+	if (request == p0_rate) {
 		req->rate = req->best_parent_rate = p0_rate;
 		req->best_parent_hw = cgfx->hws[0];
 		return 0;
@@ -760,7 +764,7 @@ static int clk_gfx3d_determine_rate(struct clk_hw *hw,
 
 	if (req->best_parent_hw == cgfx->hws[0]) {
 		/* Are we going back to a previously used rate? */
-		if (clk_hw_get_rate(cgfx->hws[2]) == req->rate)
+		if (clk_hw_get_rate(cgfx->hws[2]) == request)
 			req->best_parent_hw = cgfx->hws[2];
 		else
 			req->best_parent_hw = cgfx->hws[1];
@@ -776,21 +780,36 @@ static int clk_gfx3d_determine_rate(struct clk_hw *hw,
 
 	req->rate = req->best_parent_rate = parent_req.rate;
 
+	if (cgfx->div > 1)
+		do_div(req->rate, cgfx->div);
+
+	pr_err("GFX: Determined rate %lu\n", req->rate);
+
+
 	return 0;
 }
 
 static int clk_gfx3d_set_rate_and_parent(struct clk_hw *hw, unsigned long rate,
 		unsigned long parent_rate, u8 index)
 {
-	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
+	struct clk_rcg2_gfx3d *cgfx = to_clk_rcg2_gfx3d(hw);
+	struct clk_rcg2 *rcg = &cgfx->rcg;
 	u32 cfg;
 	int ret;
 
-	/* Just mux it, we don't use the division or m/n hardware */
 	cfg = rcg->parent_map[index].cfg << CFG_SRC_SEL_SHIFT;
+
+	/* On some targets, the GFX3D RCG may need to divide PLL frequency */
+	if (cgfx->div > 1) {
+		cfg |= ((2 * cgfx->div) - 1) << CFG_SRC_DIV_SHIFT;
+		cfg &= BIT(rcg->hid_width) - 1;
+	}
+
 	ret = regmap_write(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG, cfg);
 	if (ret)
 		return ret;
+
+	pr_err("GFX: Setting rate %lu with div %u\n", rate, cgfx->div);
 
 	return update_config(rcg);
 }
@@ -806,11 +825,42 @@ static int clk_gfx3d_set_rate(struct clk_hw *hw, unsigned long rate,
 	return 0;
 }
 
+static unsigned long
+clk_gfx3d_rcg2_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
+{
+        struct clk_rcg2 *rcg = to_clk_rcg2(hw);
+        u32 cfg, hid_div, m = 0, n = 0, mode = 0, mask;
+
+        regmap_read(rcg->clkr.regmap, RCG_CFG_OFFSET(rcg), &cfg);
+/*
+        if (rcg->mnd_width) {
+                mask = BIT(rcg->mnd_width) - 1;
+                regmap_read(rcg->clkr.regmap, RCG_M_OFFSET(rcg), &m);
+                m &= mask;
+                regmap_read(rcg->clkr.regmap, RCG_N_OFFSET(rcg), &n);
+                n =  ~n;
+                n &= mask;
+                n += m;
+                mode = cfg & CFG_MODE_MASK;
+                mode >>= CFG_MODE_SHIFT;
+        }
+*/
+        mask = BIT(rcg->hid_width) - 1;
+        hid_div = cfg >> CFG_SRC_DIV_SHIFT;
+        hid_div &= mask;
+
+	pr_err("GFX: Calculating rate with parent at %lu, m: %u n: %u hid_div: %u mode: %u\n",
+		parent_rate, m, n, hid_div, mode);
+
+        return calc_rate(parent_rate, m, n, mode, hid_div);
+}
+
+
 const struct clk_ops clk_gfx3d_ops = {
 	.is_enabled = clk_rcg2_is_enabled,
 	.get_parent = clk_rcg2_get_parent,
 	.set_parent = clk_rcg2_set_parent,
-	.recalc_rate = clk_rcg2_recalc_rate,
+	.recalc_rate = clk_gfx3d_rcg2_recalc_rate,
 	.set_rate = clk_gfx3d_set_rate,
 	.set_rate_and_parent = clk_gfx3d_set_rate_and_parent,
 	.determine_rate = clk_gfx3d_determine_rate,

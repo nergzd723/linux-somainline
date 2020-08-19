@@ -154,7 +154,7 @@ static int enable_clk(struct msm_gpu *gpu)
 
 static int disable_clk(struct msm_gpu *gpu)
 {
-	clk_bulk_disable_unprepare(gpu->nr_clocks, gpu->grp_clks);
+	//clk_bulk_disable_unprepare(gpu->nr_clocks, gpu->grp_clks);
 
 	/*
 	 * Set the clock to a deliberately low rate. On older targets the clock

@@ -552,10 +552,10 @@ static const struct regulator_desc pm660_ftsmps = {
 
 static const struct regulator_desc pm660_hfsmps = {
 	.linear_ranges = (struct linear_range[]) {
-		REGULATOR_LINEAR_RANGE(320000, 0, 215, 8000),
+		REGULATOR_LINEAR_RANGE(320000, 0, 216, 8000),
 	},
 	.n_linear_ranges = 1,
-	.n_voltages = 216,
+	.n_voltages = 217,
 	.ops = &rpm_smps_ldo_ops,
 };
 

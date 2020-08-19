@@ -12,6 +12,8 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/gpio-keys.h>
 
+//#define EARLY_FRAMEBUFFER
+
 / {
 	/* required for bootloader to select correct board */
 	qcom,msm-id = <318 0>;
@@ -20,13 +22,18 @@
 
 	/* This part enables graphical output via bootloader-enabled display */
 	chosen {
+#ifdef EARLY_FRAMEBUFFER
 		bootargs = "earlycon=tty0 console=tty0 clk_ignore_unused";
-
+#else
+		bootargs = "clk_ignore_unused";
+#endif
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
 
+#ifdef EARLY_FRAMEBUFFER
 		stdout-path = "framebuffer0";
+
 
 		framebuffer0: framebuffer@9d400000 {
 			compatible = "simple-framebuffer";
@@ -48,6 +55,7 @@
 				 <&mmcc MDSS_ESC0_CLK>,
 				 <&xo_board>;
 		};
+#endif
 	};
 
 	board_vbat: vbat-regulator {
@@ -64,7 +72,7 @@
 		compatible = "regulator-fixed";
 		regulator-name = "vph_pwr";
 
-		vin-supply = <&board_vbat>;
+	//	vin-supply = <&board_vbat>;
 		regulator-always-on;
 		regulator-boot-on;
 	};
@@ -182,6 +190,7 @@
 
 &adsp_pil {
 	firmware-name = "adsp.mdt";
+	status = "disabled";
 };
 
 &blsp_i2c1 {
@@ -215,6 +224,10 @@
 &dsi0 {
 	#address-cells = <1>;
 	#size-cells = <0>;
+
+	power-domains = <&mmcc MDSS_GDSC>;
+	vdd-supply = <&vreg_l1b_0p925>;
+	vdda-supply = <&vreg_l1a_1p225>;
 
 	panel: panel@0 {
 		reg = <0>;
@@ -265,7 +278,7 @@
 	status = "okay";
 
 	vdd-supply = <&vreg_l1b_0p925>;
-	vdda-pll-supply = <&vreg_l10a_1p8>;
+//	vdda-pll-supply = <&vreg_l10a_1p8>;
 	vdda-phy-dpdm-supply = <&vreg_l7b_3p125>;
 };
 
@@ -276,28 +289,31 @@
 &sdhc_1 {
 	status = "okay";
 
+	supports-cqe;
+
 	mmc-ddr-1_8v;
+
+
 	/* SoMC Nile platform's eMMC doesn't support HS200 mode */
 	mmc-hs400-1_8v;
+	mmc-hs400-enhanced-strobe;
 
 	/*
 	 * The SDHCI driver REALLY doesn't like
 	 * the fact that the vmmc regulator isn't 1.8V
 	 * flat.. but the eMMC works without regulators
 	 * specified.
-	 * vmmc-supply = <&vreg_l4b_29p5>;
-	 * vqmmc-supply = <&vreg_l8a_1p8>;
 	 */
+	vmmc-supply = <&vreg_l4b_29p5>;
+	vqmmc-supply = <&vreg_l8a_1p8>;
+
 };
 
 &sdhc_2 {
 	status = "okay";
 
-	/*
-	 * See above.
-	 * vmmc-supply = <&vreg_l5b_29p5>;
-	 * vqmmc-supply = <&vreg_l2b_2p95>;
-	 */
+	vmmc-supply = <&vreg_l5b_29p5>;
+	vqmmc-supply = <&vreg_l2b_2p95>; 
 };
 
 &wifi {
@@ -327,64 +343,117 @@
 		vreg_s1b_1p125: s1b {
 			regulator-min-microvolt = <1125000>;
 			regulator-max-microvolt = <1125000>;
+			regulator-enable-ramp-delay = <200>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_s2b_1p05: s2b {
 			regulator-min-microvolt = <1050000>;
 			regulator-max-microvolt = <1050000>;
+			regulator-enable-ramp-delay = <200>;
+			regulator-ramp-delay = <0>;
 		};
 
-		vreg_s3b_s4b_0p87: s3b {
-			/* Unused */
-			status = "disabled";
+#if 0
+		vreg_s3b_s4b_0p87: s3b { /* VDD_CX */
+			//regulator-min-microvolt = <355000>;
+			/* HACK: Set it to at least 0.870V until we can scale it */
+
+			regulator-min-microvolt = <870000>;
+			regulator-max-microvolt = <955000>;
+//			regulator-boot-on;
+
+//			status = "disabled";
 		};
 
 		/* s4b is inaccessible / doesn't exist */
 
-		vreg_s5b_0p915: s5b {
-			/* Unused */
-			status = "disabled";
+		vreg_s5b_0p915: s5b { /* VDD_MX */
+			//regulator-min-microvolt = <525000>;
+			/* HACK: Set it to at least 0.915V until we can scale it */
+
+			regulator-min-microvolt = <915000>;
+			regulator-max-microvolt = <955000>;
+//			regulator-boot-on;
+
+//			status = "disabled";
 		};
+#endif
 
 		/* LDOs */
 		vreg_l1b_0p925: l1b {
-			regulator-min-microvolt = <800000>;
+			regulator-min-microvolt = <880000>;
 			regulator-max-microvolt = <928000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l2b_2p95: l2b {
-			regulator-min-microvolt = <350000>;
-			regulator-max-microvolt = <3100000>;
+			/* This regulator supports 1.648 - 3.104V on this board
+			 * but we set a max voltage of anything less than 2.7V
+			 * to satisfy a condition in sdhci.c that will disable
+			 * 3.3V SDHCI signaling, which happens to be not really
+			 * supported on the Xperia Nile/Ganges platform.
+			 */
+			regulator-min-microvolt = <1648000>;
+			regulator-max-microvolt = <2696000>;
+			/* regulator-max-microvolt = <3104000>; */
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l3b_3p0: l3b {
 			regulator-min-microvolt = <1710000>;
 			regulator-max-microvolt = <3544000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l4b_29p5: l4b {
-			regulator-min-microvolt = <1700000>;
+		//	regulator-min-microvolt = <1700000>;
+
+			regulator-min-microvolt = <2944000>;
 			regulator-max-microvolt = <2952000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+
+			regulator-min-microamp = <200>;
+			regulator-max-microamp = <600000>;
+			regulator-system-load = <570000>;
+			regulator-allow-set-load;
+			//regulator-boot-on;
+			//regulator-always-on;
 		};
 
 		vreg_l5b_29p5: l5b {
 			regulator-min-microvolt = <1720000>;
 			regulator-max-microvolt = <3600000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l6b_3p3: l6b {
 			regulator-min-microvolt = <1704000>;
 			regulator-max-microvolt = <3312000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l7b_3p125: l7b {
 			regulator-min-microvolt = <2704000>;
 			regulator-max-microvolt = <3128000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l8b_3p3: l8b {
 			regulator-min-microvolt = <2800000>;
 			regulator-max-microvolt = <3400000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l9b_0p87: l9b {
@@ -400,6 +469,8 @@
 		vreg_bob: bob {
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3600000>;
+			regulator-enable-ramp-delay = <500>;
+			regulator-ramp-delay = <0>;
 		};
 	};
 
@@ -435,89 +506,134 @@
 		};
 
 		vreg_s4a_2p04: s4a {
-			regulator-min-microvolt = <1805000>;
+			//regulator-min-microvolt = <1808000>;
+			regulator-min-microvolt = <2040000>;
 			regulator-max-microvolt = <2040000>;
+			regulator-enable-ramp-delay = <200>;
+			regulator-ramp-delay = <0>;
+			//regulator-allow-set-load;
+			regulator-always-on;
 		};
 
 		vreg_s5a_1p35: s5a {
 			regulator-min-microvolt = <1224000>;
 			regulator-max-microvolt = <1350000>;
+			regulator-enable-ramp-delay = <200>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_s6a_0p87: s6a {
 			regulator-min-microvolt = <504000>;
 			regulator-max-microvolt = <992000>;
+			regulator-enable-ramp-delay = <150>;
+			regulator-ramp-delay = <0>;
 		};
 
 		/* LDOs */
 		vreg_l1a_1p225: l1a {
-			regulator-min-microvolt = <1152000>;
+			//regulator-min-microvolt = <1152000>;
+			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <1250000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l2a_1p0: l2a {
 			regulator-min-microvolt = <944000>;
 			regulator-max-microvolt = <1008000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l3a_1p0: l3a {
 			regulator-min-microvolt = <944000>;
 			regulator-max-microvolt = <1008000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l5a_0p848: l5a {
 			regulator-min-microvolt = <528000>;
 			regulator-max-microvolt = <952000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l6a_1p3: l6a {
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <1368000>;
+			regulator-allow-set-load;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l7a_1p2: l7a {
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <1200000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l8a_1p8: l8a {
-			regulator-min-microvolt = <1696000>;
-			regulator-max-microvolt = <1952000>;
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-system-load = <325000>;
+			regulator-allow-set-load;
 		};
+
 
 		vreg_l9a_1p8: l9a {
 			regulator-min-microvolt = <1784000>;
 			regulator-max-microvolt = <1896000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l10a_1p8: l10a {
 			regulator-min-microvolt = <1784000>;
 			regulator-max-microvolt = <1944000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
 		};
 
 		vreg_l11a_1p8: l11a {
 			regulator-min-microvolt = <1784000>;
 			regulator-max-microvolt = <1944000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l12a_1p8: l12a {
 			regulator-min-microvolt = <1784000>;
 			regulator-max-microvolt = <1944000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l13a_1p8: l13a {
 			regulator-min-microvolt = <1784000>;
 			regulator-max-microvolt = <1944000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l14a_1p8: l14a {
 			regulator-min-microvolt = <1710000>;
 			regulator-max-microvolt = <1904000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l15a_1p8: l15a {
 			regulator-min-microvolt = <1648000>;
 			regulator-max-microvolt = <2952000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l16a_2p7: l16a {
@@ -528,16 +644,23 @@
 		vreg_l17a_1p8: l17a {
 			regulator-min-microvolt = <1648000>;
 			regulator-max-microvolt = <2952000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l18a_1v8: l18a {
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1800000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
 		};
 
 		vreg_l19a_3p3: l19a {
 			regulator-min-microvolt = <3200000>;
 			regulator-max-microvolt = <3400000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
 		};
 	};
 };
@@ -586,4 +709,21 @@
 &usb3_dwc3 {
 	dr_mode = "peripheral";
 	extcon = <&extcon_usb>;
+};
+
+
+&adreno_smmu {
+	/* HACK: GX GDSC parent is CX. We need to bring up CX for SMMU
+	 *       but we need both up for Adreno. On the other hand, we
+	 *       need to manage the GX rpmpd domain in the adreno driver.
+	 *       Enable CX/GX GDSCs here so that we can manage the GX
+	 *       RPM Power Domain in the Adreno driver.
+	 */
+	power-domains = <&gpucc GPU_GX_GDSC>;
+};
+
+&adreno_gpu {
+	power-domains = <&rpmpd SDM660_VDDMX>;
+
+//	status = "disabled";
 };
