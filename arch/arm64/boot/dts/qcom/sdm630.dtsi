@@ -820,9 +820,9 @@
 			clock-names = "core";
 		};
 
-		bimc: interconnect@1000000 {
+		bimc: interconnect@1008000 {
 			compatible = "qcom,sdm660-bimc";
-			reg = <0x01000000 0x80000>;
+			reg = <0x01008000 0x78000>;
 			#interconnect-cells = <1>;
 			clock-names = "bus", "bus_a";
 			clocks = <&rpmcc RPM_SMD_BIMC_CLK>,
@@ -843,9 +843,9 @@
 				 <&rpmcc RPM_SMD_CNOC_A_CLK>;
 		};
 
-		snoc: interconnect@1620000 {
+		snoc: interconnect@1626000 {
 			compatible = "qcom,sdm660-snoc";
-			reg = <0x01620000 0x20000>;
+			reg = <0x01626000 0x7090>;
 			#interconnect-cells = <1>;
 			clock-names = "bus", "bus_a";
 			clocks = <&rpmcc RPM_SMD_SNOC_CLK>,
@@ -895,18 +895,18 @@
 				<GIC_SPI 474 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
-		a2noc: interconnect@1700000 {
+		a2noc: interconnect@1704000 {
 			compatible = "qcom,sdm660-a2noc";
-			reg = <0x01700000 0x20000>;
+			reg = <0x01704000 0xc100>;
 			#interconnect-cells = <1>;
 			clock-names = "bus", "bus_a";
 			clocks = <&rpmcc RPM_SMD_AGGR2_NOC_CLK>,
 				 <&rpmcc RPM_SMD_AGGR2_NOC_A_CLK>;
 		};
 
-		mnoc: interconnect@1740000 {
+		mnoc: interconnect@1745000 {
 			compatible = "qcom,sdm660-mnoc";
-			reg = <0x01740000 0x10000>;
+			reg = <0x01745000 0xA010>;
 			#interconnect-cells = <1>;
 			clock-names = "bus", "bus_a", "iface";
 			clocks = <&rpmcc RPM_SMD_MMSSNOC_AXI_CLK>,
@@ -1659,6 +1659,13 @@
 
 				operating-points-v2 = <&mdp_opp_table>;
 				power-domains = <&rpmpd SDM660_VDDCX>;
+
+				interconnects = <&mnoc MASTER_MDP_P0 &bimc SLAVE_EBI>,	
+						<&mnoc MASTER_MDP_P1 &bimc SLAVE_EBI>,
+						<&gnoc MASTER_APSS_PROC &mnoc SLAVE_DISPLAY_CFG>;
+				interconnect-names = "mdp0-mem",
+						     "mdp1-mem",
+						     "rotator-mem";
 
 				ports {
 					#address-cells = <1>;
