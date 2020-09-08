@@ -404,6 +404,30 @@
 			regulator-enable-ramp-delay = <500>;
 			regulator-ramp-delay = <0>;
 		};
+
+		vreg_bob_pin1: bob_pin1 {
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3600000>;
+			regulator-enable-ramp-delay = <500>;
+			regulator-ramp-delay = <0>;
+			qcom,bob-pin-id = <1>;
+		};
+
+		vreg_bob_pin2: bob_pin2 {
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3600000>;
+			regulator-enable-ramp-delay = <500>;
+			regulator-ramp-delay = <0>;
+			qcom,bob-pin-id = <2>;
+		};
+
+		vreg_bob_pin3: bob_pin3 {
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3600000>;
+			regulator-enable-ramp-delay = <500>;
+			regulator-ramp-delay = <0>;
+			qcom,bob-pin-id = <3>;
+		};
 	};
 
 	pm660-regulators {
