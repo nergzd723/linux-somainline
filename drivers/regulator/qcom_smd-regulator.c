@@ -23,10 +23,12 @@ struct qcom_rpm_reg {
 
 	int is_enabled;
 	int uV;
+	u32 uV_pin_key;
 	u32 load;
 
 	unsigned int enabled_updated:1;
 	unsigned int uv_updated:1;
+	unsigned int uv_pin_updated:1;
 	unsigned int load_updated:1;
 };
 
@@ -39,10 +41,13 @@ struct rpm_regulator_req {
 #define RPM_KEY_SWEN	0x6e657773 /* "swen" */
 #define RPM_KEY_UV	0x00007675 /* "uv" */
 #define RPM_KEY_MA	0x0000616d /* "ma" */
+#define RPM_KEY_PCV1	0x31766370 /* "pcv1" */
+#define RPM_KEY_PCV2	0x32766370 /* "pcv2" */
+#define RPM_KEY_PCV3	0x33766370 /* "pcv3" */
 
 static int rpm_reg_write_active(struct qcom_rpm_reg *vreg)
 {
-	struct rpm_regulator_req req[3];
+	struct rpm_regulator_req req[4];
 	int reqlen = 0;
 	int ret;
 
@@ -67,6 +72,13 @@ static int rpm_reg_write_active(struct qcom_rpm_reg *vreg)
 		reqlen++;
 	}
 
+	if (vreg->uV_pin_key && vreg->uv_pin_updated && vreg->is_enabled) {
+		req[reqlen].key = cpu_to_le32(vreg->uV_pin_key);
+		req[reqlen].nbytes = cpu_to_le32(sizeof(u32));
+		req[reqlen].value = cpu_to_le32(vreg->uV);
+		reqlen++;
+	}
+
 	if (!reqlen)
 		return 0;
 
@@ -76,6 +88,7 @@ static int rpm_reg_write_active(struct qcom_rpm_reg *vreg)
 	if (!ret) {
 		vreg->enabled_updated = 0;
 		vreg->uv_updated = 0;
+		vreg->uv_pin_updated = 0;
 		vreg->load_updated = 0;
 	}
 
@@ -145,6 +158,25 @@ static int rpm_reg_set_voltage(struct regulator_dev *rdev,
 	return ret;
 }
 
+static int rpm_reg_set_pins_voltage(struct regulator_dev *rdev,
+				    int min_uV,
+				    int max_uV,
+				    unsigned *selector)
+{
+	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
+	int ret;
+	int old_uV = vreg->uV;
+
+	vreg->uV = min_uV;
+	vreg->uv_pin_updated = 1;
+
+	ret = rpm_reg_write_active(vreg);
+	if (ret)
+		vreg->uV = old_uV;
+
+	return ret;
+}
+
 static int rpm_reg_set_load(struct regulator_dev *rdev, int load_uA)
 {
 	struct qcom_rpm_reg *vreg = rdev_get_drvdata(rdev);
@@ -196,6 +228,15 @@ static const struct regulator_ops rpm_bob_ops = {
 
 	.get_voltage = rpm_reg_get_voltage,
 	.set_voltage = rpm_reg_set_voltage,
+};
+
+static const struct regulator_ops rpm_bob_pin_ops = {
+	.enable = rpm_reg_enable,
+	.disable = rpm_reg_disable,
+	.is_enabled = rpm_reg_is_enabled,
+
+	.get_voltage = rpm_reg_get_voltage,
+	.set_voltage = rpm_reg_set_pins_voltage,
 };
 
 static const struct regulator_desc pma8084_hfsmps = {
@@ -604,6 +645,15 @@ static const struct regulator_desc pm660l_bob = {
 	.ops = &rpm_bob_ops,
 };
 
+static const struct regulator_desc pm660l_bob_pin = {
+	.linear_ranges = (struct linear_range[]) {
+		REGULATOR_LINEAR_RANGE(1800000, 0, 84, 32000),
+	},
+	.n_linear_ranges = 1,
+	.n_voltages = 85,
+	.ops = &rpm_bob_pin_ops,
+};
+
 static const struct regulator_desc pms405_hfsmps3 = {
 	.linear_ranges = (struct linear_range[]) {
 		REGULATOR_LINEAR_RANGE(320000, 0, 215, 8000),
@@ -986,6 +1036,9 @@ static const struct rpm_regulator_data rpm_pm660l_regulators[] = {
 	{ "l9b", QCOM_SMD_RPM_RWLC, 0, &pm660_ht_nldo, "vdd_l1_l9_l10" },
 	{ "l10b", QCOM_SMD_RPM_RWLM, 0, &pm660_ht_nldo, "vdd_l1_l9_l10" },
 	{ "bob", QCOM_SMD_RPM_BOBB, 1, &pm660l_bob, "vdd_bob", },
+	{ "bob_pin1", QCOM_SMD_RPM_BOBB, 1, &pm660l_bob_pin, "vdd_bob_pin", },
+	{ "bob_pin2", QCOM_SMD_RPM_BOBB, 1, &pm660l_bob_pin, "vdd_bob_pin", },
+	{ "bob_pin3", QCOM_SMD_RPM_BOBB, 1, &pm660l_bob_pin, "vdd_bob_pin", },
 	{ }
 };
 
@@ -1028,6 +1081,39 @@ static const struct of_device_id rpm_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, rpm_of_match);
 
+static int rpm_reg_of_parse(struct device_node *node,
+			    const struct regulator_desc *desc,
+			    struct regulator_config *config)
+{
+	struct qcom_rpm_reg *vreg = config->driver_data;
+	struct device *dev = config->dev;
+	u32 val;
+	int ret;
+
+	if (vreg->type == QCOM_SMD_RPM_BOBB) {
+		ret = of_property_read_u32(node, "qcom,bob-pin-id", &val);
+		if (ret == 0) {
+			switch (val) {
+			case 1:
+				vreg->uV_pin_key = RPM_KEY_PCV1;
+				break;
+			case 2:
+				vreg->uV_pin_key = RPM_KEY_PCV2;
+				break;
+			case 3:
+				vreg->uV_pin_key = RPM_KEY_PCV3;
+				break;
+			default:
+				dev_err(dev,
+					"Invalid BoB pin %d specified\n", val);
+				return -EINVAL;
+			}
+		}
+	}
+
+	return 0;
+}
+
 static int rpm_reg_probe(struct platform_device *pdev)
 {
 	const struct rpm_regulator_data *reg;
@@ -1067,6 +1153,7 @@ static int rpm_reg_probe(struct platform_device *pdev)
 		vreg->desc.name = reg->name;
 		vreg->desc.supply_name = reg->supply;
 		vreg->desc.of_match = reg->name;
+		vreg->desc.of_parse_cb = rpm_reg_of_parse;
 
 		config.dev = &pdev->dev;
 		config.driver_data = vreg;
