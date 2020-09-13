@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
  * Copyright (c) 2020, Konrad Dybcio
+ *                     AngeloGioacchino Del Regno <kholk11@gmail.com>
  */
 
 #include <dt-bindings/clock/qcom,gcc-sdm660.h>
@@ -1496,8 +1497,8 @@
 			pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off>;
 
 			bus-width = <4>;
-			interconnects = <&a2noc MASTER_SDCC_2 &bimc SLAVE_EBI>,
-				<&gnoc MASTER_APSS_PROC  &cnoc SLAVE_SDCC_2>;
+			interconnects = <&a2noc MASTER_SDCC_2 &bimc SLAVE_A2NOC_SNOC>,
+				        <&gnoc MASTER_APSS_PROC &cnoc SLAVE_SDCC_2>;
 
 			power-domains = <&rpmpd SDM660_VDDCX>;
 			operating-points-v2 = <&sdhc2_opp_table>;
