@@ -247,6 +247,8 @@ static struct gdsc gpu_gx_gdsc = {
 	.clamp_io_ctrl = 0x130,
 	.resets = (unsigned int []){ GPU_GX_BCR },
 	.reset_count = 1,
+	.cxcs = (unsigned int []){ 0x1098 },
+	.cxc_count = 1,
 	.pd = {
 		.name = "gpu_gx",
 	},
