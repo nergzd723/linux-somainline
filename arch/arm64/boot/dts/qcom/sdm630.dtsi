@@ -962,40 +962,51 @@
 				bias-disable;
 			};
 
-			blsp2_uart1_tx_active: blsp2-uart1-tx-active {
-				pins = "gpio16";
-				drive-strength = <2>;
-				bias-disable;
+			blsp2_uart1_default: blsp2-uart1-active {
+				pinmux {
+					pins = "gpio16", "gpio17",
+					       "gpio18", "gpio19";
+					function = "blsp_uart5";
+				};
+				pinconf-tx-rts {
+					pins = "gpio16", "gpio19";
+					drive-strength = <2>;
+					bias-disable;
+				};
+				pinconf-rx {
+					/*
+					 * Avoid garbage data while BT module
+					 * is powered off or not driving signal
+					 */
+					pins = "gpio17";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+				pinconf-cts {
+					/* Match the pull of the BT module */
+					pins = "gpio18";
+					drive-strength = <2>;
+					bias-pull-down;
+				};
 			};
-
-			blsp2_uart1_tx_sleep: blsp2-uart1-tx-sleep {
-				pins = "gpio16";
-				drive-strength = <2>;
-				bias-pull-up;
-			};
-
-			blsp2_uart1_rxcts_active: blsp2-uart1-rxcts-active {
-				pins = "gpio17", "gpio18";
-				drive-strength = <2>;
-				bias-disable;
-			};
-
-			blsp2_uart1_rxcts_sleep: blsp2-uart1-rxcts-sleep {
-				pins = "gpio17", "gpio18";
-				drive-strength = <2>;
-				bias-no-pull;
-			};
-
-			blsp2_uart1_rfr_active: blsp2-uart1-rfr-active {
-				pins = "gpio19";
-				drive-strength = <2>;
-				bias-disable;
-			};
-
-			blsp2_uart1_rfr_sleep: blsp2-uart1-rfr-sleep {
-				pins = "gpio19";
-				drive-strength = <2>;
-				bias-no-pull;
+			
+			blsp2_uart1_sleep: blsp2-uart1-sleep {
+				pinmux {
+					pins = "gpio16", "gpio17",
+					       "gpio18", "gpio19";
+					function = "gpio";
+				};
+				pinconf-tx {
+					pins = "gpio16";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+				pinconf-rx-cts-rts {
+					pins = "gpio17", "gpio18",
+					       "gpio19";
+					drive-strength = <2>;
+					bias-no-pull;
+				};
 			};
 
 			i2c1_default: i2c1-default {
@@ -1711,22 +1722,27 @@
 
 					opp-150000000 {
 						opp-hz = /bits/ 64 <150000000>;
+						opp-peak-kBps = <320000 320000 76800>;
 						required-opps = <&rpmpd_opp_low_svs>;
 					};
 					opp-275000000 {
 						opp-hz = /bits/ 64 <275000000>;
+						opp-peak-kBps = <6400000 6400000 160000>;
 						required-opps = <&rpmpd_opp_svs>;
 					};
 					opp-300000000 {
 						opp-hz = /bits/ 64 <300000000>;
+						opp-peak-kBps = <6400000 6400000 190000>;
 						required-opps = <&rpmpd_opp_svs_plus>;
 					};
 					opp-330000000 {
 						opp-hz = /bits/ 64 <330000000>;
+						opp-peak-kBps = <6400000 6400000 240000>;
 						required-opps = <&rpmpd_opp_nom>;
 					};
 					opp-412500000 {
 						opp-hz = /bits/ 64 <412500000>;
+						opp-peak-kBps = <6400000 6400000 320000>;
 						required-opps = <&rpmpd_opp_turbo>;
 					};
 				};
@@ -1943,11 +1959,8 @@
 			clock-names = "core", "iface";
 			dmas = <&blsp2_dma 0>, <&blsp2_dma 1>;
 			dma-names = "tx", "rx";
-			pinctrl-names = "default", "sleep";
-			pinctrl-0 = <&blsp2_uart1_tx_active &blsp2_uart1_rxcts_active
-				&blsp2_uart1_rfr_active>;
-			pinctrl-1 = <&blsp2_uart1_tx_sleep &blsp2_uart1_rxcts_sleep
-				&blsp2_uart1_rfr_sleep>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&blsp2_uart1_default>;
 			status = "disabled";
 		};
 
