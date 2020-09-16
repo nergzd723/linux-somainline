@@ -291,22 +291,13 @@
 
 	supports-cqe;
 
-	mmc-ddr-1_8v;
-
-
 	/* SoMC Nile platform's eMMC doesn't support HS200 mode */
+	mmc-ddr-1_8v;
 	mmc-hs400-1_8v;
 	mmc-hs400-enhanced-strobe;
 
-	/*
-	 * The SDHCI driver REALLY doesn't like
-	 * the fact that the vmmc regulator isn't 1.8V
-	 * flat.. but the eMMC works without regulators
-	 * specified.
-	 */
 	vmmc-supply = <&vreg_l4b_29p5>;
 	vqmmc-supply = <&vreg_l8a_1p8>;
-
 };
 
 &sdhc_2 {
@@ -561,7 +552,7 @@
 		};
 
 		vreg_l6a_1p3: l6a {
-			regulator-min-microvolt = <1200000>;
+			regulator-min-microvolt = <1304000>;
 			regulator-max-microvolt = <1368000>;
 			regulator-allow-set-load;
 			regulator-enable-ramp-delay = <250>;
@@ -586,7 +577,7 @@
 
 
 		vreg_l9a_1p8: l9a {
-			regulator-min-microvolt = <1784000>;
+			regulator-min-microvolt = <1804000>;
 			regulator-max-microvolt = <1896000>;
 			regulator-enable-ramp-delay = <250>;
 			regulator-ramp-delay = <0>;
@@ -609,17 +600,20 @@
 		};
 
 		vreg_l12a_1p8: l12a {
-			regulator-min-microvolt = <1784000>;
+			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1944000>;
 			regulator-enable-ramp-delay = <250>;
 			regulator-ramp-delay = <0>;
 		};
 
+		/* This gives power to the LPDDR4: never turn it off! */
 		vreg_l13a_1p8: l13a {
-			regulator-min-microvolt = <1784000>;
+			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1944000>;
 			regulator-enable-ramp-delay = <250>;
 			regulator-ramp-delay = <0>;
+			regulator-boot-on;
+			regulator-always-on;
 		};
 
 		vreg_l14a_1p8: l14a {
@@ -656,7 +650,7 @@
 		};
 
 		vreg_l19a_3p3: l19a {
-			regulator-min-microvolt = <3200000>;
+			regulator-min-microvolt = <3312000>;
 			regulator-max-microvolt = <3400000>;
 			regulator-enable-ramp-delay = <250>;
 			regulator-ramp-delay = <0>;
