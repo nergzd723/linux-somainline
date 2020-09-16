@@ -253,8 +253,8 @@ static struct gdsc gpu_gx_gdsc = {
 		.name = "gpu_gx",
 	},
 	.parent = &gpu_cx_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = CLAMP_IO | SW_RESET | AON_RESET,
+	.pwrsts = PWRSTS_OFF | PWRSTS_ON | PWRSTS_RET,
+	.flags = CLAMP_IO | SW_RESET | AON_RESET | NO_RET_PERIPH,
 	//.supply = "vdd-gx";
 };
 
