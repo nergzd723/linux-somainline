@@ -261,6 +261,8 @@
 		reset-gpios = <&tlmm 53 GPIO_ACTIVE_HIGH>;
 		disp-te-gpios = <&tlmm 59 GPIO_ACTIVE_HIGH>;
 
+		backlight = <&pm660l_wled>;
+
 		pinctrl-names = "default";
 		pinctrl-0 = <&panel_reset_gpio &panel_te_gpio>;
 		port {
