@@ -660,6 +660,9 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 	if (adreno_gpu->info->quirks & ADRENO_QUIRK_TWO_PASS_USE_WFI)
 		gpu_rmw(gpu, REG_A5XX_PC_DBG_ECO_CNTL, 0, (1 << 8));
 
+	/* Disable UCHE global filter as SP can invalidate/flush independently */
+	gpu_write(gpu, 0x00000E81, BIT(29));
+
 	/* Enable USE_RETENTION_FLOPS */
 	gpu_write(gpu, REG_A5XX_CP_CHICKEN_DBG, 0x02000000);
 
@@ -768,6 +771,10 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
 	gpu_write(gpu, REG_A5XX_SP_ADDR_MODE_CNTL, 0x1);
 	gpu_write(gpu, REG_A5XX_TPL1_ADDR_MODE_CNTL, 0x1);
 	gpu_write(gpu, REG_A5XX_RBBM_SECVID_TSB_ADDR_MODE_CNTL, 0x1);
+
+	/* Some GPUs may lock up when the flat shading optimizations are ON */
+	if (adreno_gpu->info->quirks & ADRENO_QUIRK_NO_FLAT_SHADING_OPT)
+		gpu_rmw(gpu, REG_A5XX_VPC_DBG_ECO_CNTL, 0, BIT(10));
 
 	/*
 	 * VPC corner case with local memory load kill leads to corrupt

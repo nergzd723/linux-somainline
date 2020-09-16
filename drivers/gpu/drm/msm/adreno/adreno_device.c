@@ -144,7 +144,8 @@ static const struct adreno_info gpulist[] = {
 		 * the GDSC which appears to make it grumpy
 		 */
 		.inactive_period = 250,
-		.quirks = ADRENO_QUIRK_LMLOADKILL_DISABLE,
+		.quirks = ADRENO_QUIRK_LMLOADKILL_DISABLE |
+			  ADRENO_QUIRK_NO_FLAT_SHADING_OPT,
 		.init = a5xx_gpu_init,
 		.zapfw = "a508_zap.mdt",
 	}, {
