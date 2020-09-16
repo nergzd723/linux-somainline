@@ -210,7 +210,20 @@
 &blsp_i2c6 {
 	status = "okay";
 
-	/* NXP NFC */
+	pn553c2@28 {
+		compatible = "ncp,nxp-nci-i2c";
+		
+		reg = <0x28>;
+		clock-frequency = <100000>;
+
+		interrupt-parent = <&tlmm>;
+		interrupts = <28 IRQ_TYPE_LEVEL_HIGH>;
+
+		enable-gpios = <&tlmm 29 GPIO_ACTIVE_LOW>;
+		firmware-gpios = <&tlmm 30 GPIO_ACTIVE_HIGH>;
+
+		/* TODO: Add support for clock gpio and bbclk clock */
+	};
 };
 
 &blsp1_uart2 {
