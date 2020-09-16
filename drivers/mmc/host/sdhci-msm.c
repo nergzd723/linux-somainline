@@ -2082,7 +2082,8 @@ static int sdhci_msm_probe(struct platform_device *pdev)
 	if (!ret) {
 		msm_host->has_opp_table = true;
 	} else if (ret != -ENODEV) {
-		dev_err(&pdev->dev, "Invalid OPP table in Device tree\n");
+		dev_err(&pdev->dev, "Invalid OPP table in Device tree: %d\n", ret);
+		ret = -EPROBE_DEFER;
 		goto opp_cleanup;
 	}
 
