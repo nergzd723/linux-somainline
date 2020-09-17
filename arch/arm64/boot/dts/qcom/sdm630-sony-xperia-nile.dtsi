@@ -24,8 +24,6 @@
 	chosen {
 #ifdef EARLY_FRAMEBUFFER
 		bootargs = "earlycon=tty0 console=tty0 clk_ignore_unused";
-#else
-		bootargs = "clk_ignore_unused";
 #endif
 		#address-cells = <2>;
 		#size-cells = <2>;
