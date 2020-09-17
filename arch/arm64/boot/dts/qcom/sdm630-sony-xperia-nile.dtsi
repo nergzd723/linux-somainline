@@ -291,7 +291,7 @@
 	status = "okay";
 
 	vdd-supply = <&vreg_l1b_0p925>;
-//	vdda-pll-supply = <&vreg_l10a_1p8>;
+	vdda-pll-supply = <&vreg_l10a_1p8>;
 	vdda-phy-dpdm-supply = <&vreg_l7b_3p125>;
 };
 
@@ -600,7 +600,7 @@
 		};
 
 		vreg_l10a_1p8: l10a {
-			regulator-min-microvolt = <1784000>;
+			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1944000>;
 			regulator-enable-ramp-delay = <250>;
 			regulator-ramp-delay = <0>;
