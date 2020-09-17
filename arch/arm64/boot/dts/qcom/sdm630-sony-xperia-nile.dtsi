@@ -358,31 +358,15 @@
 			regulator-ramp-delay = <0>;
 		};
 
-#if 0
-		vreg_s3b_s4b_0p87: s3b { /* VDD_CX */
-			//regulator-min-microvolt = <355000>;
-			/* HACK: Set it to at least 0.870V until we can scale it */
-
-			regulator-min-microvolt = <870000>;
-			regulator-max-microvolt = <955000>;
-//			regulator-boot-on;
-
-//			status = "disabled";
-		};
-
-		/* s4b is inaccessible / doesn't exist */
-
-		vreg_s5b_0p915: s5b { /* VDD_MX */
-			//regulator-min-microvolt = <525000>;
-			/* HACK: Set it to at least 0.915V until we can scale it */
-
-			regulator-min-microvolt = <915000>;
-			regulator-max-microvolt = <955000>;
-//			regulator-boot-on;
-
-//			status = "disabled";
-		};
-#endif
+		/*
+		 * At least on Nile's configuration, S3B/S4B (VDD_CX) and
+		 * S5B (VDD_MX) are managed only through RPM Power Domains.
+		 * Trying to set a voltage on the main supply will create
+		 * havoc and freeze the SoC.
+		 * In any case, reference voltages for these regulators are:
+		 * S3B/S4B: 0.870V
+		 * S5B: 0.915V
+		 */
 
 		/* LDOs */
 		vreg_l1b_0p925: l1b {
