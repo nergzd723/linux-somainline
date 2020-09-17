@@ -1105,86 +1105,106 @@
 				bias-pull-up;
 			};
 
-			sdc1_clk_on: sdc1-clk-on {
-				pins = "sdc1_clk";
-				bias-disable;
-				drive-strength = <16>;
+			sdc1_state_on: sdc1-on {
+				pinconf-clk {
+					pins = "sdc1_clk";
+					bias-disable;
+					drive-strength = <16>;
+				};
+
+				pinconf-cmd {
+					pins = "sdc1_cmd";
+					bias-pull-up;
+					drive-strength = <10>;
+				};
+
+				pinconf-data {
+					pins = "sdc1_data";
+					bias-pull-up;
+					drive-strength = <10>;
+				};
+
+				pinconf-rclk {
+					pins = "sdc1_rclk";
+					bias-pull-down;
+				};
 			};
 
-			sdc1_clk_off: sdc1-clk-off {
-				pins = "sdc1_clk";
-				bias-disable;
-				drive-strength = <2>;
+			sdc1_state_off: sdc1-off {
+				pinconf-clk {
+					pins = "sdc1_clk";
+					bias-disable;
+					drive-strength = <2>;
+				};
+
+				pinconf-cmd {
+					pins = "sdc1_cmd";
+					bias-pull-up;
+					drive-strength = <2>;
+				};
+
+				pinconf-data {
+					pins = "sdc1_data";
+					bias-pull-up;
+					drive-strength = <2>;
+				};
+
+				pinconf-rclk {
+					pins = "sdc1_rclk";
+					bias-pull-down;
+				};
 			};
 
-			sdc1_cmd_on: sdc1-cmd-on {
-				pins = "sdc1_cmd";
-				bias-pull-up;
-				drive-strength = <10>;
+			sdc2_state_on: sdc2-on {
+				pinconf-clk {
+					pins = "sdc2_clk";
+					bias-disable;
+					drive-strength = <16>;
+				};
+
+				pinconf-cmd {
+					pins = "sdc2_cmd";
+					bias-pull-up;
+					drive-strength = <10>;
+				};
+
+				pinconf-data {
+					pins = "sdc2_data";
+					bias-pull-up;
+					drive-strength = <10>;
+				};
+
+				pinconf-sd-cd {
+					pins = "gpio54";
+					bias-pull-up;
+					drive-strength = <2>;
+				};
 			};
 
-			sdc1_cmd_off: sdc1-cmd-off {
-				pins = "sdc1_cmd";
-				bias-pull-up;
-				drive-strength = <2>;
-			};
+			sdc2_state_off: sdc2-off {
+				pinconf-clk {
+					pins = "sdc2_clk";
+					bias-disable;
+					drive-strength = <2>;
+				};
 
-			sdc1_data_on: sdc1-data-on {
-				pins = "sdc1_data";
-				bias-pull-up;
-				drive-strength = <8>;
-			};
+				pinconf-cmd {
+					pins = "sdc2_cmd";
+					bias-pull-up;
+					drive-strength = <2>;
+				};
 
-			sdc1_data_off: sdc1-data-off {
-				pins = "sdc1_data";
-				bias-pull-up;
-				drive-strength = <2>;
-			};
+				pinconf-data {
+					pins = "sdc2_data";
+					bias-pull-up;
+					drive-strength = <2>;
+				};
 
-			sdc1_rclk_on: sdc1-rclk-on {
-				pins = "sdc1_rclk";
-				bias-pull-down;
-			};
-
-			sdc1_rclk_off: sdc1-rclk-off {
-				pins = "sdc1_rclk";
-				bias-pull-down;
-			};
-
-			sdc2_clk_on: sdc2-clk-on {
-				pins = "sdc2_clk";
-				bias-disable;
-				drive-strength = <16>;
-			};
-
-			sdc2_clk_off: sdc2-clk-off {
-				pins = "sdc2_clk";
-				bias-disable;
-				drive-strength = <2>;
-			};
-
-			sdc2_cmd_on: sdc2-cmd-on {
-				pins = "sdc2_cmd";
-				bias-pull-up;
-				drive-strength = <10>;
-			};
-
-			sdc2_cmd_off: sdc2-cmd-off {
-				pins = "sdc2_cmd";
-				bias-pull-up;
-				drive-strength = <2>;
-			};
-
-			sdc2_data_on: sdc2-data-on {
-				pins = "sdc2_data";
-				bias-pull-up;
-				drive-strength = <10>;
-			};
-
-			sdc2_data_off: sdc2-data-off {
-				pins = "sdc2_data";
-				bias-pull-up;
-				drive-strength = <2>;
+				pinconf-sd-cd {
+					pins = "gpio54";
+					bias-disable;
+					drive-strength = <2>;
+				};
 			};
 		};
 
@@ -1513,8 +1533,8 @@
 			clock-names = "core", "iface", "xo";
 
 			pinctrl-names = "default", "sleep";
-			pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on>;
-			pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off>;
+			pinctrl-0 = <&sdc2_state_on>;
+			pinctrl-1 = <&sdc2_state_off>;
 
 			bus-width = <4>;
 			interconnects = <&a2noc MASTER_SDCC_2 &bimc SLAVE_A2NOC_SNOC>,
@@ -1565,8 +1585,8 @@
 			clock-names = "core", "iface", "xo";
 
 			pinctrl-names = "default", "sleep";
-			pinctrl-0 = <&sdc1_clk_on &sdc1_cmd_on &sdc1_data_on &sdc1_rclk_on>;
-			pinctrl-1 = <&sdc1_clk_off &sdc1_cmd_off &sdc1_data_off &sdc1_rclk_off>;
+			pinctrl-0 = <&sdc1_state_on>;
+			pinctrl-1 = <&sdc1_state_off>;
 
 			bus-width = <8>;
 			non-removable;
