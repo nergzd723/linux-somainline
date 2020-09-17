@@ -860,6 +860,12 @@
 			qcom,use-3-lvl-tables;
 			qcom,skip-init;
 
+			clocks = <&rpmcc RPM_SMD_AGGR2_NOC_CLK>;
+			clock-names = "bus";
+			
+			assigned-clocks = <&rpmcc RPM_SMD_AGGR2_NOC_CLK>;
+			assigned-clock-rates = <1000>;
+
 			#global-interrupts = <2>;
 			interrupts =
 				<GIC_SPI 229 IRQ_TYPE_LEVEL_HIGH>,
@@ -1472,14 +1478,17 @@
 			clocks = <&gcc GCC_CFG_NOC_USB3_AXI_CLK>,
 				 <&gcc GCC_USB30_MASTER_CLK>,
 				 <&gcc GCC_AGGRE2_USB3_AXI_CLK>,
+				 <&rpmcc RPM_SMD_AGGR2_NOC_CLK>,
 				 <&gcc GCC_USB30_MOCK_UTMI_CLK>,
 				 <&gcc GCC_USB30_SLEEP_CLK>;
-			clock-names = "cfg_noc", "core", "iface", "mock_utmi",
-				      "sleep";
+			clock-names = "cfg_noc", "core", "iface", "bus",
+				      "mock_utmi", "sleep";
 
 			assigned-clocks = <&gcc GCC_USB30_MOCK_UTMI_CLK>,
-					  <&gcc GCC_USB30_MASTER_CLK>;
-			assigned-clock-rates = <19200000>, <120000000>;
+					  <&gcc GCC_USB30_MASTER_CLK>,
+					  <&rpmcc RPM_SMD_AGGR2_NOC_CLK>;
+			assigned-clock-rates = <19200000>, <120000000>,
+					       <19200000>;
 
 			interrupts = <GIC_SPI 347 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 243 IRQ_TYPE_LEVEL_HIGH>;
@@ -2068,6 +2077,13 @@
 			qcom,use-3-lvl-tables;
 			qcom,skip-init;
 			qcom,no-smr-check;
+			
+			clocks = <&mmcc MNOC_AHB_CLK>,
+				 <&mmcc BIMC_SMMU_AHB_CLK>,
+				 <&rpmcc RPM_SMD_MMSSNOC_AXI_CLK>,
+				 <&mmcc BIMC_SMMU_AXI_CLK>;
+			clock-names = "iface-mm", "iface-smmu",
+				      "bus-mm", "bus-smmu";
 
 			#global-interrupts = <2>;
 			interrupts =
@@ -2098,10 +2114,6 @@
 				<GIC_SPI 274 IRQ_TYPE_LEVEL_HIGH>,
 				<GIC_SPI 275 IRQ_TYPE_LEVEL_HIGH>,
 				<GIC_SPI 276 IRQ_TYPE_LEVEL_HIGH>;
-
-			clocks = <&mmcc BIMC_SMMU_AHB_CLK>,
-						<&mmcc BIMC_SMMU_AXI_CLK>;
-			clock-names = "iface", "bus";
 		};
 
 		adsp_pil: remoteproc@15700000 {
