@@ -1309,6 +1309,7 @@
 					opp-peak-kBps = <3072000>;
 					opp-supported-hw = <0xFF>;
 				};
+
 				opp-465000000 {
 					opp-hz = /bits/ 64 <465000000>;
 					opp-level = <RPM_SMD_LEVEL_SVS_PLUS>;
@@ -1757,7 +1758,7 @@
 				power-domains = <&rpmpd SDM660_VDDCX>;
 
 				interrupt-parent = <&mdss>;
-				interrupts = <4 0>;
+				interrupts = <4 IRQ_TYPE_LEVEL_HIGH>;
 
 				assigned-clocks = <&mmcc BYTE0_CLK_SRC>,
 						  <&mmcc PCLK0_CLK_SRC>;
