@@ -1032,6 +1032,7 @@ static struct clk_branch gcc_bimc_hmss_axi_clk = {
 		.enable_mask = BIT(22),
 		.hw.init = &(struct clk_init_data){
 			.name = "gcc_bimc_hmss_axi_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -1557,6 +1558,7 @@ static struct clk_branch gcc_gpu_bimc_gfx_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(struct clk_init_data){
 			.name = "gcc_gpu_bimc_gfx_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -1564,14 +1566,16 @@ static struct clk_branch gcc_gpu_bimc_gfx_clk = {
 
 static struct clk_branch gcc_gpu_cfg_ahb_clk = {
 	.halt_reg = 0x71004,
-	.halt_check = BRANCH_VOTED,
+	.halt_check = BRANCH_HALT,
+	.hwcg_reg = 0x71004,
+	.hwcg_bit = 1,
 	.clkr = {
 		.enable_reg = 0x71004,
 		.enable_mask = BIT(0),
 		.hw.init = &(struct clk_init_data){
 			.name = "gcc_gpu_cfg_ahb_clk",
-			.ops = &clk_branch2_ops,
 			.flags = CLK_IS_CRITICAL,
+			.ops = &clk_branch2_ops,
 		},
 	},
 };
@@ -1619,7 +1623,7 @@ static struct clk_branch gcc_hmss_dvm_bus_clk = {
 		.hw.init = &(struct clk_init_data){
 			.name = "gcc_hmss_dvm_bus_clk",
 			.ops = &clk_branch2_ops,
-			.flags = CLK_IGNORE_UNUSED,
+			.flags = CLK_IS_CRITICAL,
 		},
 	},
 };
@@ -1698,6 +1702,8 @@ static struct clk_branch gcc_mmss_noc_cfg_ahb_clk = {
 static struct clk_branch gcc_mmss_sys_noc_axi_clk = {
 	.halt_reg = 0x9000,
 	.halt_check = BRANCH_HALT,
+	.hwcg_reg = 0x9000,
+	.hwcg_bit = 1,
 	.clkr = {
 		.enable_reg = 0x9000,
 		.enable_mask = BIT(0),
