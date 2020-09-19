@@ -472,11 +472,11 @@ void adreno_submit(struct msm_gpu *gpu, struct msm_gem_submit *submit,
 		 */
 		OUT_PKT3(ring, CP_EVENT_WRITE, 1);
 		OUT_RING(ring, HLSQ_FLUSH);
-	}
 
-	/* wait for idle before cache flush/interrupt */
-	OUT_PKT3(ring, CP_WAIT_FOR_IDLE, 1);
-	OUT_RING(ring, 0x00000000);
+		/* wait for idle before cache flush/interrupt */
+		OUT_PKT3(ring, CP_WAIT_FOR_IDLE, 1);
+		OUT_RING(ring, 0x00000000);
+	}
 
 	if (!adreno_is_a2xx(adreno_gpu)) {
 		/* BIT(31) of CACHE_FLUSH_TS triggers CACHE_FLUSH_TS IRQ from GPU */
