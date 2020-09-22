@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2010 - 2017 Novatek, Inc.
+ * Copyright (C) 2020 AngeloGioacchino Del Regno <kholk11@gmail.com>
  */
 
 #include <linux/delay.h>
@@ -12,19 +13,26 @@
 
 #include "nt36xxx.h"
 
+#define NT36XXX_MAX_RETRIES		5
+#define NT36XXX_MAX_FW_RST_RETRY	50
+
+static const char* nvt_i2c_supplies[] = {
+	"vdd",
+	"vio",
+};
+
 static int nvt_i2c_read(struct i2c_client *client, uint16_t address,
 			uint8_t *buf, uint16_t len)
 {
-	int ret;
-	int retries;
-	struct i2c_msg msg[2] = {
-		/* first write slave position to i2c devices */
+	int ret, retry = NT36XXX_MAX_RETRIES;
+	struct i2c_msg msg[] = {
+		/* Write slave position to i2c devices */
 		{
 			.addr = address,
 			.len = 1,
 			.buf = &buf[0]
 		},
-		/* Second read data from position */
+		/* Read data from position */
 		{
 			.addr = address,
 			.flags = I2C_M_RD,
@@ -33,147 +41,134 @@ static int nvt_i2c_read(struct i2c_client *client, uint16_t address,
 		}
 	};
 
-	while (retries < 5) {
-		ret = i2c_transfer(client->adapter, msg, 2);
-		if (ret < 0)
-			return ret;
-		if (ret == 2)
-			break;
-		retries++;
-	}
+	do {
+		ret = i2c_transfer(client->adapter, &msg, ARRAY_SIZE(msg));
+		if (likely(ret == ARRAY_SIZE(msg)))
+			return 0;
+	} while (--retry);
 
-	if (retries == 5)
-		return -EIO;
-
-	return 0;
+	return ret < 0 ? ret : -EIO;
 }
 
 static int nvt_i2c_write(struct i2c_client *client, uint16_t address,
 			 uint8_t *buf, uint16_t len)
 {
-	int ret;
-	int retries;
-	struct i2c_msg msg = {
-		.addr = address,
-		.flags = !I2C_M_RD,
-		.len = len,
-		.buf = buf
+	int ret, retry = NT36XXX_MAX_RETRIES;
+	struct i2c_msg msg[] = {
+		{
+			.addr = address,
+			.flags = 0,
+			.len = len,
+			.buf = buf,
+		},
 	};
 
-	while (retries < 5) {
-		ret = i2c_transfer(client->adapter, &msg, 1);
-		if (ret < 0)
-			return ret;
-		if (ret == 1)
-			break;
-		retries++;
-	}
+	do {
+		ret = i2c_transfer(client->adapter, &msg, ARRAY_SIZE(msg));
+		if (likely(ret == ARRAY_SIZE(msg)))
+			return 0;
 
-	if (retries == 5)
-		return -EIO;
+		usleep_range(100, 200);
+	} while (--retry);
 
-	return 0;
+	return ret < 0 ? ret : -EIO;
 }
 
-static void nvt_sw_reset_idle(struct nvt_i2c *nvt_i2c)
+static int nvt_sw_reset_idle(struct nvt_i2c *ts)
 {
-	uint8_t buf[4] = { 0 };
+	uint8_t buf[] = { 0x00, NT36XXX_CMD_SW_RESET };
+	int ret;
 
-	buf[0] = 0x00;
-	buf[1] = 0xA5;
-	nvt_i2c_write(nvt_i2c->client, I2C_HW_Address, buf, 2);
+	ret = nvt_i2c_write(ts->client, ts->client->addr,
+			    buf, ARRAY_SIZE(buf));
 
-	msleep(15);
+	usleep_range(15000, 16000);
+	return ret;
 }
 
 static int nvt_bootloader_reset(struct nvt_i2c *nvt_i2c)
 {
-	int ret = 0;
-	uint8_t buf[8] = { 0 };
+	uint8_t buf[] = { 0x00, NT36XXX_CMD_BOOTLOADER_RESET };
+	int ret;
 
-	buf[0] = 0x00;
-	buf[1] = 0x69;
-	ret = nvt_i2c_write(nvt_i2c->client, I2C_HW_Address, buf, 2);
+	ret = nvt_i2c_write(ts->client, ts->client->addr,
+			    buf, ARRAY_SIZE(buf));
 
 	msleep(35);
-
 	return ret;
 }
 
 static int nvt_check_fw_reset_state(struct nvt_i2c *nvt_i2c,
-				    RST_COMPLETE_STATE check_reset_state)
+				    enum nt36xxx_fw_state fw_state)
 {
-	uint8_t buf[8] = { 0 };
+	uint8_t buf[6] = { NT36XXX_EVT_RESET_COMPLETE, 0x00, 0x00,
+			   0x00, 0x00, 0x00 };
 	int ret = 0;
 	int retry = 0;
 
-	while (1) {
-		msleep(10);
-
-		buf[0] = EVENT_MAP_RESET_COMPLETE;
-		buf[1] = 0x00;
-		nvt_i2c_read(nvt_i2c->client, I2C_FW_Address, buf, 6);
-
-		if ((buf[1] >= check_reset_state) &&
-		    (buf[1] <= RESET_STATE_MAX)) {
+	do {
+		ret = nvt_i2c_read(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 6);
+		if (likely(ret != -EIO) &&
+		    (buf[1] >= fw_state) &&
+		    (buf[1] <= NT36XXX_STATE_MAX)) {
 			ret = 0;
 			break;
 		}
+		usleep_range(10000, 11000);
+	} while (--retry);
 
-		retry++;
-
-		if (retry > 100) {
-			dev_err(&nvt_i2c->client->dev,
-				"error, retry=%d, buf[1]=0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X\n",
-				retry, buf[1], buf[2], buf[3], buf[4], buf[5]);
-			ret = -1;
-			break;
-		}
+	if (!retry) {
+		dev_err(&nvt_i2c->client->dev, "Firmware reset failed.\n");
+		ret = -EBUSY;
 	}
 
 	return ret;
 }
 
-int nvt_read_pid(struct nvt_i2c *nvt_i2c)
+static int nvt_set_evt_buf_addr(struct nvt_i2c *nvt_i2c)
 {
-	uint8_t buf[3] = { 0 };
-	int ret = 0;
+	uint8_t buf[3];
 
 	/* Set xdata index to EVENT BUF ADDR */
 	buf[0] = 0xFF;
 	buf[1] = (nvt_i2c->mmap->EVENT_BUF_ADDR >> 16) & 0xFF;
 	buf[2] = (nvt_i2c->mmap->EVENT_BUF_ADDR >> 8) & 0xFF;
-	nvt_i2c_write(nvt_i2c->client, I2C_FW_Address, buf, 3);
+
+	return nvt_i2c_write(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 3);
+
+
+static int nvt_read_pid(struct nvt_i2c *nvt_i2c)
+{
+	uint8_t buf[] = { NT36XXX_EVT_PROJECTID, 0x00, 0x00 };
+	int ret = 0;
+
+	ret = nvt_set_evt_buf_addr(nvt_i2c);
+	if (unlikely(ret < 0))
+		return ret;
 
 	/* Read project id */
-	buf[0] = EVENT_MAP_PROJECTID;
-	buf[1] = 0x00;
-	buf[2] = 0x00;
-	nvt_i2c_read(nvt_i2c->client, I2C_FW_Address, buf, 3);
+	ret = nvt_i2c_read(nvt_i2c->client, NT36XXX_BLDR_ADDR,
+			   buf, ARRAY_SIZE(buf));
+	if (unlikely(ret < 0))
+		return ret;
 
 	nvt_i2c->nvt_pid = (buf[2] << 8) + buf[1];
 
-	dev_info(&nvt_i2c->client->dev, "PID=%04X\n", nvt_i2c->nvt_pid);
-
-	return ret;
+	return 0;
 }
 
-static int nvt_get_fw_info(struct nvt_i2c *nvt_i2c)
+static int __nvt_get_fw_info(struct nvt_i2c *nvt_i2c)
 {
-	uint8_t buf[64] = { 0 };
-	unsigned int retry_count = 0;
+	uint8_t buf[17] = { 0 };
 	int ret = 0;
 
-info_retry:
-	/* Set xdata index to EVENT BUF ADDR */
-	buf[0] = 0xFF;
-	buf[1] = (nvt_i2c->mmap->EVENT_BUF_ADDR >> 16) & 0xFF;
-	buf[2] = (nvt_i2c->mmap->EVENT_BUF_ADDR >> 8) & 0xFF;
-	nvt_i2c_write(nvt_i2c->client, I2C_FW_Address, buf, 3);
+	ret = nvt_set_evt_buf_addr(nvt_i2c);
+	if (unlikely(ret < 0))
+		return ret;
 
 	/* Read fw info */
-	buf[0] = EVENT_MAP_FWINFO;
-	nvt_i2c_read(nvt_i2c->client, I2C_FW_Address, buf, 17);
+	buf[0] = NT36XXX_EVT_FWINFO;
+	nvt_i2c_read(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 17);
 	nvt_i2c->fw_ver = buf[1];
 	nvt_i2c->x_num = buf[3];
 	nvt_i2c->y_num = buf[4];
@@ -183,7 +178,7 @@ info_retry:
 
 	/* Clear x_num, y_num if fw info is broken */
 	if ((buf[1] + buf[2]) != 0xFF) {
-		dev_err(&nvt_i2c->client->dev,
+		dev_dbg(&nvt_i2c->client->dev,
 			"FW info is broken! fw_ver=0x%02X, ~fw_ver=0x%02X\n",
 			buf[1], buf[2]);
 		nvt_i2c->fw_ver = 0;
@@ -192,25 +187,24 @@ info_retry:
 		nvt_i2c->abs_x_max = TOUCH_DEFAULT_MAX_WIDTH;
 		nvt_i2c->abs_y_max = TOUCH_DEFAULT_MAX_HEIGHT;
 		nvt_i2c->max_button_num = 0;
-
-		if (retry_count < 3) {
-			retry_count++;
-			dev_info(&nvt_i2c->client->dev, "retry_count=%d\n", retry_count);
-			goto info_retry;
-		}
-
-		dev_info(&nvt_i2c->client->dev, "Set default fw_ver=%d, x_num=%d, y_num=%d, \
-			 abs_x_max=%d, abs_y_max=%d, max_button_num=%d!\n",
-			 nvt_i2c->fw_ver, nvt_i2c->x_num, nvt_i2c->y_num,
-			 nvt_i2c->abs_x_max, nvt_i2c->abs_y_max,
-			 nvt_i2c->max_button_num);
-		ret = -1;
-	} else {
-		ret = 0;
+		ret = -EINVAL;
 	}
 
 	/* Get Novatek PID */
-	nvt_read_pid(nvt_i2c);
+	return nvt_read_pid(nvt_i2c);
+}
+
+static int nvt_get_fw_info(struct nvt_i2c *nvt_i2c)
+{
+	uint8_t buf[17] = { 0 };
+	unsigned int retry_count = 0;
+	int ret = 0;
+
+	for (i = 0; i < NT36XXX_MAX_RETRIES; i++) {
+		ret = __nvt_get_fw_info(nvt_i2c);
+		if (ret == 0)
+			break;
+	}
 
 	return ret;
 }
@@ -223,55 +217,17 @@ static int nvt_parse_dt(struct device *dev)
 	int ret;
 	const char *name;
 
-	nvt_i2c->irq_gpio =
-		of_get_named_gpio_flags(np, "novatek,irq-gpio", 0, NULL);
-	dev_info(&nvt_i2c->client->dev,
-		 "novatek,irq-gpio=%d\n", nvt_i2c->irq_gpio);
-
 	nvt_i2c->reset_gpio =
 		of_get_named_gpio_flags(np, "novatek,reset-gpio", 0, NULL);
 	dev_info(&nvt_i2c->client->dev,
 		 "novatek,reset-gpio=%d\n", nvt_i2c->reset_gpio);
-
-	ret = of_property_read_string(np, "novatek,vddio-reg-name", &name);
-	if (ret == -EINVAL)
-		nvt_i2c->vddio_reg_name = NULL;
-	else if (ret < 0)
-		return -EINVAL;
-	else {
-		nvt_i2c->vddio_reg_name = name;
-		dev_info(&nvt_i2c->client->dev, "vddio_reg_name = %s\n", name);
-	}
-
-	ret = of_property_read_string(np, "novatek,lab-reg-name", &name);
-	if (ret == -EINVAL)
-		nvt_i2c->lab_reg_name = NULL;
-	else if (ret < 0)
-		return -EINVAL;
-	else {
-		nvt_i2c->lab_reg_name = name;
-		dev_info(&nvt_i2c->client->dev, "lab_reg_name = %s\n", name);
-	}
-
-	ret = of_property_read_string(np, "novatek,ibb-reg-name", &name);
-	if (ret == -EINVAL)
-		nvt_i2c->ibb_reg_name = NULL;
-	else if (ret < 0)
-		return -EINVAL;
-	else {
-		nvt_i2c->ibb_reg_name = name;
-		dev_info(&nvt_i2c->client->dev, "ibb_reg_name = %s\n", name);
-	}
 
 	return 0;
 }
 #else
 static int nvt_parse_dt(struct device *dev)
 {
-	struct nvt_i2c *nvt_i2c = i2c_get_clientdata(to_i2c_client(dev));
-	nvt_i2c->irq_gpio = NVTTOUCH_INT_PIN;
-
-	return 0;
+	return -EINVAL;
 }
 #endif
 
@@ -333,69 +289,9 @@ regulator_put:
 	return ret;
 }
 
-static int nvt_enable_reg(struct nvt_i2c *nvt_i2c, bool enable)
-{
-	int ret;
-
-	if (!enable) {
-		ret = 0;
-		goto disable_ibb_reg;
-	}
-
-	if (nvt_i2c->vddio_reg) {
-		ret = regulator_enable(nvt_i2c->vddio_reg);
-		if (ret < 0) {
-			dev_err(&nvt_i2c->client->dev, "Failed to enable vddio regulator\n");
-			goto exit;
-		}
-	}
-
-	if (nvt_i2c->lab_reg && nvt_i2c->lab_reg) {
-		ret = regulator_enable(nvt_i2c->lab_reg);
-		if (ret < 0) {
-			dev_err(&nvt_i2c->client->dev, "Failed to enable lab regulator\n");
-			goto disable_vddio_reg;
-		}
-	}
-
-	if (nvt_i2c->ibb_reg) {
-		ret = regulator_enable(nvt_i2c->ibb_reg);
-		if (ret < 0) {
-			dev_err(&nvt_i2c->client->dev, "Failed to enable ibb regulator\n");
-			goto disable_lab_reg;
-		}
-	}
-
-	return 0;
-
-disable_ibb_reg:
-	if (nvt_i2c->ibb_reg)
-		regulator_disable(nvt_i2c->ibb_reg);
-
-disable_lab_reg:
-	if (nvt_i2c->lab_reg)
-		regulator_disable(nvt_i2c->lab_reg);
-
-disable_vddio_reg:
-	if (nvt_i2c->vddio_reg)
-		regulator_disable(nvt_i2c->vddio_reg);
-
-exit:
-	return ret;
-}
-
 static int nvt_gpio_config(struct nvt_i2c *nvt_i2c)
 {
 	int ret = 0;
-
-	/* Request INT-pin (Input) */
-	if (gpio_is_valid(nvt_i2c->irq_gpio)) {
-		ret = gpio_request_one(nvt_i2c->irq_gpio, GPIOF_IN, "NVT-int");
-		if (ret) {
-			dev_err(&nvt_i2c->client->dev, "Failed to request NVT-int GPIO\n");
-			goto err_request_irq_gpio;
-		}
-	}
 
 	if (gpio_is_valid(nvt_i2c->reset_gpio)) {
 		ret = gpio_request_one(nvt_i2c->reset_gpio, GPIOF_OUT_INIT_HIGH,
@@ -410,7 +306,6 @@ static int nvt_gpio_config(struct nvt_i2c *nvt_i2c)
 	return ret;
 
 err_request_reset_gpio:
-err_request_irq_gpio:
 	return ret;
 }
 
@@ -443,7 +338,7 @@ static void nvt_ts_work_func(struct work_struct *work)
 		}
 	}
 
-	ret = nvt_i2c_read(nvt_i2c->client, I2C_FW_Address, point_data,
+	ret = nvt_i2c_read(nvt_i2c->client, NT36XXX_BLDR_ADDR, point_data,
 			   POINT_DATA_LEN + 1);
 	if (ret < 0) {
 		dev_err(&nvt_i2c->client->dev, "nvt_i2c_read failed.(%d)\n", ret);
@@ -535,11 +430,11 @@ static void nvt_stop_crc_reboot(struct nvt_i2c *nvt_i2c)
 	buf[0] = 0xFF;
 	buf[1] = 0x01;
 	buf[2] = 0xF6;
-	nvt_i2c_write(nvt_i2c->client, I2C_BLDR_Address, buf, 3);
+	nvt_i2c_write(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 3);
 
 	/* Read to check if buf is 0xFC which means IC is in CRC reboot */
 	buf[0] = 0x4E;
-	nvt_i2c_read(nvt_i2c->client, I2C_BLDR_Address, buf, 4);
+	nvt_i2c_read(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 4);
 
 	if (((buf[1] == 0xFC) && (buf[2] == 0xFC) && (buf[3] == 0xFC)) ||
 	    ((buf[1] == 0xFF) && (buf[2] == 0xFF) && (buf[3] == 0xFF))) {
@@ -560,21 +455,21 @@ static void nvt_stop_crc_reboot(struct nvt_i2c *nvt_i2c)
 			buf[0] = 0xFF;
 			buf[1] = 0x03;
 			buf[2] = 0xF1;
-			nvt_i2c_write(nvt_i2c->client, I2C_BLDR_Address, buf, 3);
+			nvt_i2c_write(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 3);
 
 			buf[0] = 0x35;
 			buf[1] = 0xA5;
-			nvt_i2c_write(nvt_i2c->client, I2C_BLDR_Address, buf, 2);
+			nvt_i2c_write(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 2);
 
 			/* Check CRC_ERR_FLAG */
 			buf[0] = 0xFF;
 			buf[1] = 0x03;
 			buf[2] = 0xF1;
-			nvt_i2c_write(nvt_i2c->client, I2C_BLDR_Address, buf, 3);
+			nvt_i2c_write(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 3);
 
 			buf[0] = 0x35;
 			buf[1] = 0x00;
-			nvt_i2c_read(nvt_i2c->client, I2C_BLDR_Address, buf, 2);
+			nvt_i2c_read(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 2);
 
 			if (buf[1] == 0xA5)
 				break;
@@ -605,7 +500,7 @@ static int8_t nvt_ts_check_chip_ver_trim(struct nvt_i2c *nvt_i2c)
 	}
 
 	for (retry = 5; retry > 0; retry--) {
-		nvt_sw_reset_idle(nvt_i2c);
+		ret = nvt_sw_reset_idle(nvt_i2c);
 
 		buf[0] = 0x00;
 		buf[1] = 0x35;
@@ -615,7 +510,7 @@ static int8_t nvt_ts_check_chip_ver_trim(struct nvt_i2c *nvt_i2c)
 		buf[0] = 0xFF;
 		buf[1] = 0x01;
 		buf[2] = 0xF6;
-		nvt_i2c_write(nvt_i2c->client, I2C_BLDR_Address, buf, 3);
+		nvt_i2c_write(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 3);
 
 		buf[0] = 0x4E;
 		buf[1] = 0x00;
@@ -624,7 +519,7 @@ static int8_t nvt_ts_check_chip_ver_trim(struct nvt_i2c *nvt_i2c)
 		buf[4] = 0x00;
 		buf[5] = 0x00;
 		buf[6] = 0x00;
-		nvt_i2c_read(nvt_i2c->client, I2C_BLDR_Address, buf, 7);
+		nvt_i2c_read(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 7);
 
 		/* Compare read chip id on supported list */
 		for (list = 0; list < (sizeof(trim_id_table) /
@@ -680,14 +575,35 @@ static int nvt_ts_probe(struct i2c_client *client,
 		return -EIO;
 	}
 
-	nvt_i2c = kzalloc(sizeof(*nvt_i2c), GFP_KERNEL);
-	input = input_allocate_device();
-	if (!nvt_i2c || !input)
+	if (!client->irq) {
+		dev_err(client->dev, "No irq specified\n");
+		return -EINVAL;
+	}
+
+	nvt_i2c = devm_kzalloc(client->dev, sizeof(struct nvt_i2c), GFP_KERNEL);
+	if (!nvt_i2c)
+		return -ENOMEM;
+
+	nvt_i2c->supplies = devm_kcalloc(client->dev,
+					 ARRAY_SIZE(nvt_i2c_supplies),
+					 sizeof(struct regulator_bulk_data),
+					 GFP_KERNEL);
+	if (!nvt_i2c->supplies)
+		return -ENOMEM;
+
+	input = devm_input_allocate_device(client->dev);
+	if (!input)
 		return -ENOMEM;
 
 	nvt_i2c->client = client;
 	nvt_i2c->input = input;
 	i2c_set_clientdata(client, nvt_i2c);
+
+	nvt_i2c->ts_workq = alloc_ordered_workqueue("nt36xxx", 0);
+	if (!nvt_i2c->ts_workq)
+		return -EINVAL;
+
+	mutex_init(&nvt_i2c->lock);
 
 	nvt_parse_dt(&client->dev);
 
@@ -697,39 +613,45 @@ static int nvt_ts_probe(struct i2c_client *client,
 		return ret;
 	}
 
-	nvt_get_reg(nvt_i2c, true);
-	nvt_enable_reg(nvt_i2c, true);
+
+	ret = devm_regulator_bulk_get(&client->dev,
+				      ARRAY_SIZE(nvt_i2c_supplies),
+				      nvt_i2c->supplies);
+	if (ret != 0) {
+		if (ret != -EPROBE_DEFER)
+			dev_err(client->dev, "Cannot get supplies: %d\n", ret);
+		return ret;
+	}
+
+	ret = regulator_bulk_enable(ARRAY_SIZE(nvt_i2c_supplies),
+				    nvt_i2c->supplies);
+	if (ret)
+		return ret;
 
 	msleep(10);
 
 	ret = nvt_ts_check_chip_ver_trim(nvt_i2c);
 	if (ret) {
 		dev_err(&client->dev, "Failed to check chip version\n");
-		return -EINVAL;
+		goto error;
 	}
-
-	mutex_init(&nvt_i2c->mdata_lock);
-	mutex_init(&nvt_i2c->lock);
 
 	mutex_lock(&nvt_i2c->lock);
-	nvt_bootloader_reset(nvt_i2c);
-	nvt_check_fw_reset_state(nvt_i2c, RESET_STATE_INIT);
-	nvt_get_fw_info(nvt_i2c);
+	ret = nvt_bootloader_reset(nvt_i2c);
+	ret += nvt_check_fw_reset_state(nvt_i2c, NT36XXX_STATE_INIT);
+	ret += nvt_get_fw_info(nvt_i2c);
 	mutex_unlock(&nvt_i2c->lock);
-
-	nvt_i2c->ts_workq = alloc_ordered_workqueue("nt36xxx", 0);
-	if (!nvt_i2c->ts_workq) {
-		dev_err(&client->dev, "Failed to create workqueue\n");
-		return -EINVAL;
+	if (unlikely(ret < 0) {
+		goto error;
 	}
 
-	nvt_i2c->int_trigger_type = INT_TRIGGER_TYPE;
 	nvt_i2c->max_touch_num = TOUCH_MAX_FINGER_NUM;
 	INIT_WORK(&nvt_i2c->ts_work, nvt_ts_work_func);
 
-	snprintf(nvt_i2c->phys, sizeof(nvt_i2c->phys), "%s/input0",
-		 dev_name(&client->dev));
-	input->name = NVT_TS_NAME;
+	input->phys = devm_kasprintf(&client->dev, GFP_KERNEL,
+				     "%s/input0", dev_name(&client->dev));
+
+	input->name = NT36XXX_INPUT_DEVICE_NAME;
 	input->phys = nvt_i2c->phys;
 	input->id.bustype = BUS_I2C;
 	input->dev.parent = &client->dev;
@@ -743,14 +665,14 @@ static int nvt_ts_probe(struct i2c_client *client,
 
 	input_set_abs_params(input, ABS_MT_PRESSURE, 0, TOUCH_FORCE_NUM, 0, 0);
 
-#if TOUCH_MAX_FINGER_NUM > 1
-	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
+	if (nvt_i2c->max_touch_num > 1) {
+		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
 
-	input_set_abs_params(input, ABS_MT_POSITION_X, 0,
-			     nvt_i2c->abs_x_max - 1, 0, 0);
-	input_set_abs_params(input, ABS_MT_POSITION_Y, 0,
-			     nvt_i2c->abs_y_max - 1, 0, 0);
-#endif
+		input_set_abs_params(input, ABS_MT_POSITION_X, 0,
+				     nvt_i2c->abs_x_max - 1, 0, 0);
+		input_set_abs_params(input, ABS_MT_POSITION_Y, 0,
+				     nvt_i2c->abs_y_max - 1, 0, 0);
+	}
 
 	input_set_drvdata(input, nvt_i2c);
 
@@ -761,19 +683,14 @@ static int nvt_ts_probe(struct i2c_client *client,
 		return ret;
 	}
 
-	client->irq = gpio_to_irq(nvt_i2c->irq_gpio);
-	if (client->irq) {
-		ret = request_irq(client->irq, nvt_ts_irq_handler,
-				  nvt_i2c->int_trigger_type, client->name,
-				  nvt_i2c);
-		if (ret != 0) {
-			dev_err(&client->dev, "request irq failed. ret=%d\n",
-				ret);
-			return ret;
-		} else {
-			disable_irq(client->irq);
-		}
+	ret = devm_request_threaded_irq(client->dev, client->irq, NULL,
+					nvt_ts_irq_handler, IRQF_ONESHOT,
+					client->name, nvt_i2c);
+	if (ret != 0) {
+		dev_err(&client->dev, "request irq failed: %d\n", ret);
+		return ret;
 	}
+	disable_irq(client->irq);
 
 	device_init_wakeup(&client->dev, 1);
 	nvt_i2c->dev_pm_suspend = false;
@@ -782,6 +699,11 @@ static int nvt_ts_probe(struct i2c_client *client,
 	enable_irq(client->irq);
 
 	return 0;
+
+error:
+	regulator_bulk_disable(ARRAY_SIZE(nvt_i2c_supplies),
+			       nvt_i2c->supplies);
+	return ret;	
 }
 
 static int nvt_ts_remove(struct i2c_client *client)
@@ -791,7 +713,8 @@ static int nvt_ts_remove(struct i2c_client *client)
 	free_irq(client->irq, nvt_i2c);
 
 	nvt_get_reg(nvt_i2c, false);
-	nvt_enable_reg(nvt_i2c, false);
+	regulator_bulk_disable(ARRAY_SIZE(nvt_i2c_supplies),
+			       nvt_i2c->supplies);
 
 	mutex_destroy(&nvt_i2c->lock);
 
@@ -804,17 +727,16 @@ static int nvt_ts_remove(struct i2c_client *client)
 static int __maybe_unused nvt_ts_suspend(struct device *dev)
 {
 	struct nvt_i2c *nvt_i2c = i2c_get_clientdata(to_i2c_client(dev));
-	uint8_t buf[4] = { 0 };
+	uint8_t buf[] = { NT36XXX_EVT_HOST_CMD, NT36XXX_CMD_ENTER_SLEEP };
 	int i;
-
-	mutex_lock(&nvt_i2c->lock);
 
 	disable_irq(nvt_i2c->client->irq);
 
-	/* Write i2c command to enter "deep sleep mode" */
-	buf[0] = EVENT_MAP_HOST_CMD;
-	buf[1] = 0x11;
-	nvt_i2c_write(nvt_i2c->client, I2C_FW_Address, buf, 2);
+	ret = nvt_i2c_write(nvt_i2c->client, NT36XXX_BLDR_ADDR, buf, 2);
+	if (unlikely(ret < 0)) {
+		dev_err(&client->dev, "Cannot enter suspend!!\n");
+		return ret;
+	}
 
 	/* Release all touches */
 	for (i = 0; i < nvt_i2c->max_touch_num; i++) {
@@ -823,12 +745,7 @@ static int __maybe_unused nvt_ts_suspend(struct device *dev)
 		input_report_abs(nvt_i2c->input, ABS_MT_PRESSURE, 0);
 		input_mt_report_slot_state(nvt_i2c->input, MT_TOOL_FINGER, 0);
 	}
-
 	input_sync(nvt_i2c->input);
-
-	msleep(50);
-
-	mutex_unlock(&nvt_i2c->lock);
 
 	return 0;
 }
@@ -843,8 +760,13 @@ static int __maybe_unused nvt_ts_resume(struct device *dev)
 		gpio_set_value(nvt_i2c->reset_gpio, 1);
 	}
 
-	nvt_bootloader_reset(nvt_i2c);
-	nvt_check_fw_reset_state(nvt_i2c, RESET_STATE_REK);
+	ret = nvt_bootloader_reset(nvt_i2c);
+	if (ret < 0)
+		return ret;
+
+	ret = nvt_check_fw_reset_state(nvt_i2c, NT36XXX_STATE_REK);
+	if (ret < 0)
+		return ret;
 
 	enable_irq(nvt_i2c->client->irq);
 
@@ -864,14 +786,14 @@ MODULE_DEVICE_TABLE(of, nvt_match_table);
 #endif
 
 static const struct i2c_device_id nvt_ts_id[] = {
-	{ NVT_I2C_NAME, 0 },
+	{ "NVT-ts", 0 },
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, nvt_ts_id);
 
 static struct i2c_driver nvt_ts_driver = {
 	.driver = {
-		.name	= NVT_I2C_NAME,
+		.name	= "nt36xxx_ts",
 		.of_match_table = of_match_ptr(nvt_match_table),
 		.pm	= &nvt_ts_pm,
 	},
