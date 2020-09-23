@@ -387,6 +387,7 @@ struct arm_smmu_impl {
 	int (*cfg_probe)(struct arm_smmu_device *smmu);
 	int (*reset)(struct arm_smmu_device *smmu);
 	int (*init_context)(struct arm_smmu_domain *smmu_domain);
+	void (*stream_mapping_reset)(struct arm_smmu_device *smmu);
 	void (*test_smr_masks)(struct arm_smmu_device *smmu);
 	void (*tlb_sync)(struct arm_smmu_device *smmu, int page, int sync,
 			 int status);
