@@ -26,6 +26,7 @@ properties:
       - items:
           - enum:
               - qcom,spmi-vadc
+              - qcom,spmi-vadc-8998
               - qcom,spmi-adc5
               - qcom,spmi-adc-rev2
               - qcom,spmi-adc7
