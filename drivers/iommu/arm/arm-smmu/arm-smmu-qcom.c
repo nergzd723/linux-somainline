@@ -65,6 +65,30 @@ static const struct arm_smmu_impl qcom_smmu500_impl = {
 	.reset = qcom_smmu500_reset,
 };
 
+static int qcom_smmuv2_cfg_probe(struct arm_smmu_device *smmu)
+{
+	/*
+	 * Some IOMMUs are getting set-up for Shared Virtual Address, but:
+	 * 1. They are secured by the Hypervisor, so any configuration
+	 *    change will generate a hyp-fault and crash the system
+	 * 2. This 39-bits Virtual Address size deviates from the ARM
+	 *    System MMU Architecture specification for SMMUv2, hence
+	 *    it is non-standard. In this case, the only way to keep the
+	 *    IOMMU as the firmware did configure it, is to hardcode a
+	 *    maximum VA size of 39 bits (because of point 1).
+	 */
+	if (smmu->va_size > 39UL)
+		dev_notice(smmu->dev,
+			   "\tenabling workaround for QCOM SMMUv2 VA size\n");
+	smmu->va_size = min(smmu->va_size, 39UL);
+
+	return 0;
+}
+
+static const struct arm_smmu_impl qcom_smmuv2_impl = {
+	.cfg_probe = qcom_smmuv2_cfg_probe,
+};
+
 struct arm_smmu_device *qcom_smmu_impl_init(struct arm_smmu_device *smmu)
 {
 	struct qcom_smmu *qsmmu;
@@ -75,7 +99,11 @@ struct arm_smmu_device *qcom_smmu_impl_init(struct arm_smmu_device *smmu)
 
 	qsmmu->smmu = *smmu;
 
-	qsmmu->smmu.impl = &qcom_smmu500_impl;
+	if (of_device_is_compatible(np, "qcom,sdm660-smmu-v2")) {
+		qsmmu->smmu.impl = &qcom_smmuv2_impl;
+	} else {
+		qsmmu->smmu.impl = &qcom_smmu_impl;
+	}
 	devm_kfree(smmu->dev, smmu);
 
 	return &qsmmu->smmu;
