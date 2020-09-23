@@ -60,7 +60,7 @@ static int qcom_smmu500_reset(struct arm_smmu_device *smmu)
 	return 0;
 }
 
-static const struct arm_smmu_impl qcom_smmu_impl = {
+static const struct arm_smmu_impl qcom_smmu500_impl = {
 	.def_domain_type = qcom_smmu_def_domain_type,
 	.reset = qcom_smmu500_reset,
 };
@@ -75,7 +75,7 @@ struct arm_smmu_device *qcom_smmu_impl_init(struct arm_smmu_device *smmu)
 
 	qsmmu->smmu = *smmu;
 
-	qsmmu->smmu.impl = &qcom_smmu_impl;
+	qsmmu->smmu.impl = &qcom_smmu500_impl;
 	devm_kfree(smmu->dev, smmu);
 
 	return &qsmmu->smmu;
