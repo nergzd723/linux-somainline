@@ -6,6 +6,8 @@
 #include <linux/of.h>
 #include <linux/regulator/consumer.h>
 
+#include <video/mipi_display.h>
+
 #include <drm/drm_mipi_dsi.h>
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
@@ -48,7 +50,14 @@ static int td4322_innolux_fhd_on(struct td4322_innolux_fhd *ctx)
 
 	dsi->mode_flags |= MIPI_DSI_MODE_LPM;
 
-	dsi_dcs_write_seq(dsi, 0x35);
+	// TODO: This takes an extra argument, see below
+	dsi_dcs_write_seq(dsi, MIPI_DCS_SET_TEAR_ON);
+
+	// ret = mipi_dsi_dcs_set_tear_on(dsi, MIPI_DSI_DCS_TEAR_MODE_VHBLANK);
+	// if (ret < 0) {
+	// 	dev_err(dev, "Failed to set tear on: %d\n", ret);
+	// 	return ret;
+	// }
 
 	ret = mipi_dsi_dcs_set_display_on(dsi);
 	if (ret < 0) {
@@ -73,6 +82,13 @@ static int td4322_innolux_fhd_off(struct td4322_innolux_fhd *ctx)
 	int ret;
 
 	dsi->mode_flags &= ~MIPI_DSI_MODE_LPM;
+
+	// TODO: Does the display mind unbalanced enable/disable?
+	// ret = mipi_dsi_dcs_set_tear_off(dsi);
+	// if (ret < 0) {
+	// 	dev_err(dev, "Failed to set tear off: %d\n", ret);
+	// 	return ret;
+	// }
 
 	ret = mipi_dsi_dcs_set_display_off(dsi);
 	if (ret < 0) {
