@@ -18,6 +18,8 @@
 	qcom,pmic-id = <0x1001b 0x101011a 0x00 0x00 0x1001b 0x201011a 0x00 0x00>;
 
 	chosen {
+		bootargs = "clk_ignore_unused";
+
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
