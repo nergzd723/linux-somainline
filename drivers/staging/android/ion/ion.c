@@ -5,6 +5,8 @@
  * Copyright (C) 2011 Google, Inc.
  */
 
+#define DEBUG
+
 #include <linux/debugfs.h>
 #include <linux/device.h>
 #include <linux/dma-buf.h>
