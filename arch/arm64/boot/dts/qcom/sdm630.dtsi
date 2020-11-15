@@ -785,7 +785,7 @@
 		};
 
 		anoc2_smmu: iommu@16c0000 {
-			compatible = "qcom,sdm630-smmu-v2", "qcom,smmu-v2";
+			compatible = "qcom,sdm660-smmu-v2", "qcom,smmu-v2";
 			reg = <0x016c0000 0x40000>;
 			#iommu-cells = <1>;
 			qcom,use-3-lvl-tables;
@@ -1385,7 +1385,7 @@
 		};
 
 		adreno_smmu: iommu@5040000 {
-			compatible = "qcom,sdm630-smmu-v2", "qcom,smmu-v2";
+			compatible = "qcom,sdm660-smmu-v2", "qcom,smmu-v2";
 			reg = <0x05040000 0x10000>;
 			#iommu-cells = <1>;
 			qcom,use-3-lvl-tables;
@@ -1437,7 +1437,7 @@
 		};
 
 		lpass_smmu: iommu@5100000 {
-			compatible = "qcom,sdm630-smmu-v2", "qcom,smmu-v2";
+			compatible = "qcom,sdm660-smmu-v2", "qcom,smmu-v2";
 			reg = <0x05100000 0x40000>;
 			#iommu-cells = <1>;
 			qcom,use-3-lvl-tables;
@@ -2395,7 +2395,7 @@
 		};
 
 		mmss_smmu: iommu@cd00000 {
-			compatible = "qcom,sdm630-smmu-v2", "qcom,smmu-v2";
+			compatible = "qcom,sdm660-smmu-v2", "qcom,smmu-v2";
 			reg = <0x0cd00000 0x40000>;
 			#iommu-cells = <1>;
 			qcom,use-3-lvl-tables;
