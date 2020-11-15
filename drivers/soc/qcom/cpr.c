@@ -3,7 +3,7 @@
  * Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
  * Copyright (c) 2019, Linaro Limited
  */
-
+#define DEBUG
 #include <linux/module.h>
 #include <linux/err.h>
 #include <linux/debugfs.h>
@@ -130,6 +130,13 @@ enum voltage_change_dir {
 	UP,
 };
 
+enum cpr_type {
+	CTRL_TYPE_CPR,
+	CTRL_TYPE_CPR3,
+	CTRL_TYPE_CPRH,
+	CTRL_TYPE_MAX,
+};
+
 struct cpr_fuse {
 	char *ring_osc;
 	char *init_voltage;
@@ -155,6 +162,7 @@ struct fuse_corner_data {
 struct cpr_fuses {
 	int init_voltage_step;
 	int init_voltage_width;
+	int apc_voltage_step;
 	struct fuse_corner_data *fuse_corner_data;
 };
 
@@ -164,6 +172,7 @@ struct corner_data {
 };
 
 struct cpr_desc {
+	enum cpr_type cpr_type;
 	unsigned int num_fuse_corners;
 	int min_diff_quot;
 	int *step_quot;
@@ -237,6 +246,7 @@ struct cpr_drv {
 	struct regmap		*tcsr;
 	bool			loop_disabled;
 	u32			gcnt;
+	struct opp_table	*opp_table;
 	unsigned long		flags;
 
 	struct fuse_corner	*fuse_corners;
@@ -592,7 +602,7 @@ static irqreturn_t cpr_irq_handler(int irq, void *dev)
 	const struct cpr_desc *desc = drv->desc;
 	irqreturn_t ret = IRQ_HANDLED;
 	u32 val;
-
+return 0;
 	mutex_lock(&drv->lock);
 
 	val = cpr_read(drv, REG_RBIF_IRQ_STATUS);
@@ -645,7 +655,7 @@ static irqreturn_t cpr_irq_handler(int irq, void *dev)
 static int cpr_enable(struct cpr_drv *drv)
 {
 	int ret;
-
+return 0;
 	ret = regulator_enable(drv->vdd_apc);
 	if (ret)
 		return ret;
@@ -665,6 +675,8 @@ static int cpr_enable(struct cpr_drv *drv)
 
 static int cpr_disable(struct cpr_drv *drv)
 {
+	return 0;
+
 	mutex_lock(&drv->lock);
 
 	if (cpr_is_allowed(drv)) {
@@ -749,7 +761,7 @@ static int cpr_set_performance_state(struct generic_pm_domain *domain,
 	struct corner *corner, *end;
 	enum voltage_change_dir dir;
 	int ret = 0, new_uV;
-
+return 0;
 	mutex_lock(&drv->lock);
 
 	dev_dbg(drv->dev, "%s: setting perf state: %u (prev state: %u)\n",
@@ -891,11 +903,16 @@ static int cpr_fuse_corner_init(struct cpr_drv *drv)
 	const struct reg_sequence *accs;
 	int ret;
 
-	accs = acc_desc->settings;
+	if (desc->cpr_type == CTRL_TYPE_CPRH) {
+		step_volt = desc->cpr_fuses.apc_voltage_step;
+	} else {
+		step_volt = regulator_get_linear_step(drv->vdd_apc);
+		if (!step_volt)
+			return -EINVAL;
+	}
 
-	step_volt = regulator_get_linear_step(drv->vdd_apc);
-	if (!step_volt)
-		return -EINVAL;
+	if (acc_desc)
+		accs = acc_desc->settings;
 
 	/* Populate fuse_corner members */
 	fuse = drv->fuse_corners;
@@ -941,16 +958,21 @@ static int cpr_fuse_corner_init(struct cpr_drv *drv)
 		fuse->quot += fdata->quot_adjust;
 		fuse->step_quot = desc->step_quot[fuse->ring_osc_idx];
 
-		/* Populate acc settings */
-		fuse->accs = accs;
-		fuse->num_accs = acc_desc->num_regs_per_fuse;
-		accs += acc_desc->num_regs_per_fuse;
+		if (accs) {
+			/* Populate acc settings */
+			fuse->accs = accs;
+			fuse->num_accs = acc_desc->num_regs_per_fuse;
+			accs += acc_desc->num_regs_per_fuse;
+		}
 	}
 
 	/*
 	 * Restrict all fuse corner PVS voltages based upon per corner
-	 * ceiling and floor voltages.
+	 * ceiling and floor voltages on all types but CPRh.
 	 */
+	if (desc->cpr_type == CTRL_TYPE_CPRH)
+		goto skip_pvs_restrict;
+
 	for (fuse = drv->fuse_corners, i = 0; fuse <= end; fuse++, i++) {
 		if (fuse->uV > fuse->max_uV)
 			fuse->uV = fuse->max_uV;
@@ -976,7 +998,10 @@ static int cpr_fuse_corner_init(struct cpr_drv *drv)
 				fuse->max_uV, i);
 			return -EINVAL;
 		}
+	}
 
+skip_pvs_restrict:
+	for (fuse = drv->fuse_corners, i = 0; fuse <= end; fuse++, i++) {
 		dev_dbg(drv->dev,
 			"fuse corner %d: [%d %d %d] RO%hhu quot %d squot %d\n",
 			i, fuse->min_uV, fuse->uV, fuse->max_uV,
@@ -1254,6 +1279,10 @@ static int cpr_corner_init(struct cpr_drv *drv)
 			fuse->quot - corner->quot_adjust);
 	}
 
+	dev_err(drv->dev, "Returning -EINVAL: we are in development phase\n");
+	return -EINVAL;
+
+
 	return 0;
 }
 
@@ -1377,6 +1406,166 @@ static int cpr_find_initial_corner(struct cpr_drv *drv)
 	return 0;
 }
 
+/* It's not everything correct in here... infact, many things are not.... */
+
+static const struct cpr_desc sdm630_silver_cpr_desc = {
+	.cpr_type = CTRL_TYPE_CPRH,
+	.num_fuse_corners = 3,
+	.min_diff_quot = 0, /*??*/
+	.step_quot = (int []){ 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12}, /* we have min and max, is using min ok?? */
+	.timer_delay_us = 3000,
+	.timer_cons_up = 0,
+	.timer_cons_down = 2,
+	.up_threshold = 2,
+	.down_threshold = 2,
+	.idle_clocks = 15, /* ?? */
+	.gcnt_us = 19, /* is downstream saying microseconds or what unit?? */
+	.vdd_apc_step_up_limit = 1, /* unused on sdm630 APC0/1 CPRh */
+	.vdd_apc_step_down_limit = 1,
+	.cpr_fuses = {
+		.init_voltage_step = 10000, /*ok*/
+		.init_voltage_width = 6, /*ok*/
+		.apc_voltage_step = 1,
+		.fuse_corner_data = (struct fuse_corner_data[]){
+			/* fuse corner 0 */
+			{
+				.ref_uV = 644000,
+				.max_uV = 724000,
+				.min_uV = 588000,
+				.max_volt_scale = 0,
+				.max_quot_scale = 0,
+				.quot_offset = 0,
+				.quot_scale = 1,
+				.quot_adjust = 0,
+				.quot_offset_scale = 5,
+				.quot_offset_adjust = 0,
+			},
+			/* fuse corner 1 */
+			{
+				.ref_uV = 788000,
+				.max_uV = 724000,
+				.min_uV = 588000,
+				.max_volt_scale = 0,
+				.max_quot_scale = 0,
+				.quot_offset = 0,
+				.quot_scale = 1,
+				.quot_adjust = 0,
+				.quot_offset_scale = 5,
+				.quot_offset_adjust = 0,
+			},
+			/* fuse corner 2 */
+			{
+				.ref_uV = 1068000,
+				.max_uV = 1068000,
+				.min_uV = 844000,
+				.max_volt_scale = 2000,
+				.max_quot_scale = 1400,
+				.quot_offset = 0,
+				.quot_scale = 1,
+				.quot_adjust = 0,
+				.quot_offset_scale = 5,
+				.quot_offset_adjust = 0,
+			},
+		},
+	},
+};
+
+static const struct cpr_desc sdm630_gold_cpr_desc = {
+	.cpr_type = CTRL_TYPE_CPRH,
+	.num_fuse_corners = 5,
+	.min_diff_quot = 0, /*??*/
+	.step_quot = (int []){ 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12}, /* we have min and max, is using min ok?? */
+	.timer_delay_us = 3000,
+	.timer_cons_up = 0,
+	.timer_cons_down = 2,
+	.up_threshold = 2,
+	.down_threshold = 2,
+	.idle_clocks = 15, /* ?? */
+	.gcnt_us = 19, /* is downstream saying microseconds or what unit?? */
+	.vdd_apc_step_up_limit = 1, /* unused on sdm630 APC0/1 CPRh */
+	.vdd_apc_step_down_limit = 1,
+	.cpr_fuses = {
+		.init_voltage_step = 10000, /*ok*/
+		.init_voltage_width = 6, /*ok*/
+		.apc_voltage_step = 1,
+		.fuse_corner_data = (struct fuse_corner_data[]){
+			/* fuse corner 0 */
+			{
+				.ref_uV = 644000,
+				.max_uV = 724000,
+				.min_uV = 588000,
+				.max_volt_scale = 0,
+				.max_quot_scale = 0,
+				.quot_offset = 0,
+				.quot_scale = 1,
+				.quot_adjust = 0,
+				.quot_offset_scale = 5,
+				.quot_offset_adjust = 0,
+			},
+			/* fuse corner 1 */
+			{
+				.ref_uV = 788000,
+				.max_uV = 724000,
+				.min_uV = 588000,
+				.max_volt_scale = 0,
+				.max_quot_scale = 0,
+				.quot_offset = 0,
+				.quot_scale = 1,
+				.quot_adjust = 0,
+				.quot_offset_scale = 5,
+				.quot_offset_adjust = 0,
+			},
+			/* fuse corner 2 */
+			{
+				.ref_uV = 868000,
+				.max_uV = 788000,
+				.min_uV = 596000,
+				.max_volt_scale = 2000,
+				.max_quot_scale = 1400,
+				.quot_offset = 0,
+				.quot_scale = 1,
+				.quot_adjust = -20,
+				.quot_offset_scale = 5,
+				.quot_offset_adjust = 0,
+			},
+			/* fuse corner 3 */
+			{
+				.ref_uV = 988000,
+				.max_uV = 1068000,
+				.min_uV = 844000,
+				.max_volt_scale = 2000,
+				.max_quot_scale = 1400,
+				.quot_offset = 0,
+				.quot_scale = 1,
+				.quot_adjust = 0,
+				.quot_offset_scale = 5,
+				.quot_offset_adjust = 0,
+			},
+			/* fuse corner 4 */
+			{
+				.ref_uV = 1068000,
+				.max_uV = 1068000,
+				.min_uV = 844000,
+				.max_volt_scale = 2000,
+				.max_quot_scale = 1400,
+				.quot_offset = 0,
+				.quot_scale = 1,
+				.quot_adjust = 0,
+				.quot_offset_scale = 5,
+				.quot_offset_adjust = 0,
+			},
+		},
+	},
+};
+
+static const struct cpr_acc_desc sdm630_cpr_gold_desc = {
+	.cpr_desc = &sdm630_gold_cpr_desc,
+};
+
+static const struct cpr_acc_desc sdm630_cpr_silver_desc = {
+	.cpr_desc = &sdm630_silver_cpr_desc,
+};
+
 static const struct cpr_desc qcs404_cpr_desc = {
 	.num_fuse_corners = 3,
 	.min_diff_quot = CPR_FUSE_MIN_QUOT_DIFF,
@@ -1468,7 +1657,8 @@ static int cpr_power_off(struct generic_pm_domain *domain)
 {
 	struct cpr_drv *drv = container_of(domain, struct cpr_drv, pd);
 
-	return cpr_disable(drv);
+	return 0;
+//	return cpr_disable(drv);
 }
 
 static int cpr_power_on(struct generic_pm_domain *domain)
@@ -1482,9 +1672,14 @@ static int cpr_pd_attach_dev(struct generic_pm_domain *domain,
 			     struct device *dev)
 {
 	struct cpr_drv *drv = container_of(domain, struct cpr_drv, pd);
+	struct opp_table *opp_table;
 	const struct acc_desc *acc_desc = drv->acc_desc;
 	int ret = 0;
-
+/*
+	opp_table = dev_pm_opp_get_opp_table(&drv->pd.dev);
+	if (!opp_table)
+		return -EINVAL;
+*/
 	mutex_lock(&drv->lock);
 
 	dev_dbg(drv->dev, "attach callback for: %s\n", dev_name(dev));
@@ -1508,6 +1703,12 @@ static int cpr_pd_attach_dev(struct generic_pm_domain *domain,
 	 * set by the bootloader, so that we can determine the direction
 	 * the first time cpr_set_performance_state() is called.
 	 */
+
+/* if use_cpufreq_policy -- get cpufreq, get frequency from cpufreq
+   else, devm_clk_get cpu_clk ------ CPRh devices on cpufreq-hw do NOT have any cpu_clk
+   as the entire thing is managed by the OSM as P-States, which exposes nothing.
+ */
+/*
 	drv->cpu_clk = devm_clk_get(dev, NULL);
 	if (IS_ERR(drv->cpu_clk)) {
 		ret = PTR_ERR(drv->cpu_clk);
@@ -1515,10 +1716,15 @@ static int cpr_pd_attach_dev(struct generic_pm_domain *domain,
 			dev_err(drv->dev, "could not get cpu clk: %d\n", ret);
 		goto unlock;
 	}
+*/
+
 	drv->attached_cpu_dev = dev;
 
 	dev_dbg(drv->dev, "using cpu clk from: %s\n",
 		dev_name(drv->attached_cpu_dev));
+
+	dev_dbg(drv->dev, "will get OPP count from: %s\n",
+		dev_name(&drv->pd.dev));
 
 	/*
 	 * Everything related to (virtual) corners has to be initialized
@@ -1528,13 +1734,21 @@ static int cpr_pd_attach_dev(struct generic_pm_domain *domain,
 	 * The reason for this is that we need to know the highest
 	 * frequency associated with each fuse corner.
 	 */
+/*
 	ret = dev_pm_opp_get_opp_count(&drv->pd.dev);
 	if (ret < 0) {
 		dev_err(drv->dev, "could not get OPP count\n");
 		goto unlock;
 	}
-	drv->num_corners = ret;
+*/
+goto unlock;
+/*	opp_table = dev_pm_opp_get_opp_table(&drv->pd.dev);
+	ret = _get_opp_count(opp_table);
 
+	drv->num_corners = ret;
+	dev_err(drv->dev, "OPP Count: %d\n", ret);
+*/
+goto unlock;
 	if (drv->num_corners < 2) {
 		dev_err(drv->dev, "need at least 2 OPPs to use CPR\n");
 		ret = -EINVAL;
@@ -1558,6 +1772,10 @@ static int cpr_pd_attach_dev(struct generic_pm_domain *domain,
 	ret = cpr_init_parameters(drv);
 	if (ret)
 		goto unlock;
+
+mutex_unlock(&drv->lock);
+dev_err(drv->dev, "Returning 0 early: We are in development phase and the rest here is DANGEROUS!!!!\n");
+return 0;
 
 	/* Configure CPR HW but keep it disabled */
 	ret = cpr_config(drv);
@@ -1645,6 +1863,113 @@ static void cpr_debugfs_init(struct cpr_drv *drv)
 			    drv, &cpr_debug_info_fops);
 }
 
+#if 0
+static const char *cprh_genpd_names[] = { "cpu-opp", NULL };
+
+static int cprh_self_opp(struct platform_device *pdev)
+{
+	struct opp_table *names_opp_table;
+	struct opp_table *hw_opp_table;
+	struct opp_table *genpd_opp_table;
+	u32 versions;
+
+	struct device *dev = &pdev->dev;
+	int ret;
+
+
+/*
+		if (data->get_version) {
+
+			if (pvs_name) {
+				names_opp_tables[cpu] = dev_pm_opp_set_prop_name(
+								     cpu_dev,
+								     pvs_name);
+				if (IS_ERR(names_opp_tables[cpu])) {
+					ret = PTR_ERR(names_opp_tables[cpu]);
+					dev_err(cpu_dev, "Failed to add OPP name %s\n",
+						pvs_name);
+					goto free_opp;
+				}
+			}
+
+			hw_opp_tables[cpu] = dev_pm_opp_set_supported_hw(
+									 cpu_dev, &versions, 1);
+			if (IS_ERR(hw_opp_tables[cpu])) {
+				ret = PTR_ERR(hw_opp_tables[cpu]);
+				dev_err(cpu_dev,
+					"Failed to set supported hardware\n");
+				goto free_genpd_opp;
+			}
+		}
+*/
+
+	genpd_opp_table = dev_pm_opp_attach_genpd(dev, cprh_genpd_names,
+						  NULL);
+	if (IS_ERR(genpd_opp_table)) {
+		ret = PTR_ERR(genpd_opp_table);
+		if (ret != -EPROBE_DEFER)
+			dev_err(dev,
+				"Could not attach to pm_domain: %d\n",
+				ret);
+		return ret;
+	}
+
+	return ret;
+}
+#endif
+
+#if 0
+static int cprh_init(struct cpr_drv *drv)
+{
+	struct opp_table *opp_table;
+	struct device *cpu_dev;
+	int ret;
+
+	cpu_dev = get_cpu_device(0);
+	if (!cpu_dev)
+		return -EINVAL;
+
+	/* The CPRh needs a OPP to set up against */
+	opp_table = dev_pm_opp_get_opp_table(cpu_dev);
+	if (IS_ERR(opp_table))
+		return PTR_ERR(opp_table);
+
+	/*
+	 * The attainable DVFS pair is based on a fixed table that
+	 * does gets declared in DT.
+	 */
+	ret = dev_pm_opp_get_opp_count(cpu_dev);
+	if (ret < 0) {
+		dev_err(drv->dev, "could not get OPP count\n");
+		return ret;
+	} else if (ret < 2) {
+		dev_err(drv->dev,
+			"need at least 2 OPPs to setup CPRh, found %d\n", ret);
+		return EINVAL;
+	}
+	drv->num_corners = ret;
+
+	drv->corners = devm_kcalloc(drv->dev, drv->num_corners,
+				    sizeof(*drv->corners),
+				    GFP_KERNEL);
+	if (!drv->corners)
+		return -ENOMEM;
+
+	ret = cpr_corner_init(drv);
+	if (ret)
+		return ret;
+
+	//cpr_set_loop_allowed(drv);
+
+	ret = cpr_init_parameters(drv);
+	if (ret)
+		return ret;
+
+
+	return ret;
+}
+#endif
+
 static int cpr_probe(struct platform_device *pdev)
 {
 	struct resource *res;
@@ -1652,17 +1977,24 @@ static int cpr_probe(struct platform_device *pdev)
 	struct cpr_drv *drv;
 	int irq, ret;
 	const struct cpr_acc_desc *data;
+	const struct cpr_desc *desc;
 	struct device_node *np;
 	u32 cpr_rev = FUSE_REVISION_UNKNOWN;
 
 	data = of_device_get_match_data(dev);
-	if (!data || !data->cpr_desc || !data->acc_desc)
+	if (!data || !data->cpr_desc)
+		return -EINVAL;
+
+	desc = data->cpr_desc;
+
+	/* CPRh disallows MEM-ACC access from the HLOS */
+	if (desc->cpr_type != CTRL_TYPE_CPRH && !data->acc_desc)
 		return -EINVAL;
 
 	drv = devm_kzalloc(dev, sizeof(*drv), GFP_KERNEL);
 	if (!drv)
 		return -ENOMEM;
-	drv->dev = dev;
+	drv->dev = &pdev->dev;
 	drv->desc = data->cpr_desc;
 	drv->acc_desc = data->acc_desc;
 
@@ -1672,27 +2004,40 @@ static int cpr_probe(struct platform_device *pdev)
 	if (!drv->fuse_corners)
 		return -ENOMEM;
 
-	np = of_parse_phandle(dev->of_node, "acc-syscon", 0);
-	if (!np)
-		return -ENODEV;
+	if (desc->cpr_type != CTRL_TYPE_CPRH) {
+		np = of_parse_phandle(dev->of_node, "acc-syscon", 0);
+		if (!np)
+			return -ENODEV;
 
-	drv->tcsr = syscon_node_to_regmap(np);
-	of_node_put(np);
-	if (IS_ERR(drv->tcsr))
-		return PTR_ERR(drv->tcsr);
+		drv->tcsr = syscon_node_to_regmap(np);
+		of_node_put(np);
+		if (IS_ERR(drv->tcsr))
+			return PTR_ERR(drv->tcsr);
+	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	drv->base = devm_ioremap_resource(dev, res);
 	if (IS_ERR(drv->base))
 		return PTR_ERR(drv->base);
 
-	irq = platform_get_irq(pdev, 0);
-	if (irq < 0)
+	/* Only CPR1 has a cpr-irq */
+	irq = platform_get_irq_optional(pdev, 0);
+	if ((desc->cpr_type == CTRL_TYPE_CPR) && (irq < 0))
 		return -EINVAL;
 
-	drv->vdd_apc = devm_regulator_get(dev, "vdd-apc");
-	if (IS_ERR(drv->vdd_apc))
-		return PTR_ERR(drv->vdd_apc);
+	/*
+	 * On CPRh SoCs accessing vdd-apc is generally not allowed,
+	 * so bail out only if:
+	 * - The CPRh has an accessible vdd-apc, but errored out, or
+ 	 * - We are not probing a CPRh instance (vdd-apc is mandatory)
+	 */
+	drv->vdd_apc = devm_regulator_get_optional(dev, "vdd-apc");
+	if (IS_ERR(drv->vdd_apc)) {
+		if (desc->cpr_type != CTRL_TYPE_CPRH ||
+		    (desc->cpr_type == CTRL_TYPE_CPRH &&
+		     PTR_ERR(drv->vdd_apc) != -ENODEV))
+			return PTR_ERR(drv->vdd_apc);
+	}
 
 	/*
 	 * Initialize fuse corners, since it simply depends
@@ -1719,47 +2064,69 @@ static int cpr_probe(struct platform_device *pdev)
 
 	mutex_init(&drv->lock);
 
-	ret = devm_request_threaded_irq(dev, irq, NULL,
-					cpr_irq_handler,
-					IRQF_ONESHOT | IRQF_TRIGGER_RISING,
-					"cpr", drv);
-	if (ret)
-		return ret;
+	if (desc->cpr_type == CTRL_TYPE_CPR) {
+		dev_err(dev, "Registering IRQ\n");
+		ret = devm_request_threaded_irq(dev, irq, NULL,
+						cpr_irq_handler,
+						IRQF_ONESHOT |
+						IRQF_TRIGGER_RISING,
+						"cpr", drv);
+		if (ret) {
+			dev_err(dev, "IRQ request failed\n");
+			return ret;
+		}
+	}
 
+	drv->pd.name = kasprintf(GFP_KERNEL, "%pOF", dev->of_node);
+	if (!drv->pd.name)
+		return -EINVAL;
+/*
 	drv->pd.name = devm_kstrdup_const(dev, dev->of_node->full_name,
 					  GFP_KERNEL);
 	if (!drv->pd.name)
 		return -EINVAL;
+*/
 
+	drv->pd.name = kbasename(drv->pd.name);
 	drv->pd.power_off = cpr_power_off;
 	drv->pd.power_on = cpr_power_on;
 	drv->pd.set_performance_state = cpr_set_performance_state;
 	drv->pd.opp_to_performance_state = cpr_get_performance_state;
 	drv->pd.attach_dev = cpr_pd_attach_dev;
 
+
 	ret = pm_genpd_init(&drv->pd, NULL, true);
 	if (ret)
 		return ret;
 
+	/* CPRh needs more initialization bits */
+/*	if (desc->cpr_type == CTRL_TYPE_CPRH) {
+		ret = cprh_init(drv);
+		if (ret)
+			return ret;
+	}
+*/
 	ret = of_genpd_add_provider_simple(dev->of_node, &drv->pd);
 	if (ret)
 		return ret;
 
 	platform_set_drvdata(pdev, drv);
-	cpr_debugfs_init(drv);
 
+
+	cpr_debugfs_init(drv);
+dev_info(dev, "%s probe success\n", dev->of_node->full_name);
 	return 0;
 }
 
 static int cpr_remove(struct platform_device *pdev)
 {
 	struct cpr_drv *drv = platform_get_drvdata(pdev);
-
+/*
 	if (cpr_is_allowed(drv)) {
 		cpr_ctl_disable(drv);
 		cpr_irq_set(drv, 0);
 	}
-
+*/
 	of_genpd_del_provider(pdev->dev.of_node);
 	pm_genpd_remove(&drv->pd);
 
@@ -1769,6 +2136,8 @@ static int cpr_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id cpr_match_table[] = {
+	{ .compatible = "qcom,sdm630-cprh-gold", .data = &sdm630_cpr_gold_desc },
+	{ .compatible = "qcom,sdm630-cprh-silver", .data = &sdm630_cpr_silver_desc },
 	{ .compatible = "qcom,qcs404-cpr", .data = &qcs404_cpr_acc_desc },
 	{ }
 };

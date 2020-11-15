@@ -1,0 +1,11 @@
+--- drivers/soc/qcom/cpr.c
++++ drivers/soc/qcom/cpr.c
+@@ -676,7 +686,7 @@ static int cpr_enable(struct cpr_drv *drv)
+ static int cpr_disable(struct cpr_drv *drv)
+ {
+ 	int ret;
+-
++return 0;
+ 	mutex_lock(&drv->lock);
+ 
+ 	if (cpr_is_allowed(drv)) {
