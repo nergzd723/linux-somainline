@@ -38,6 +38,92 @@
 		};
 	};
 
+	reserved_memory: reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		wlan_msa_guard: wlan-msa-guard@85600000 {
+			reg = <0x0 0x85600000 0x0 0x100000>;
+			no-map;
+		};
+
+		wlan_msa_mem: wlan-msa-mem@85700000 {
+			reg = <0x0 0x85700000 0x0 0x100000>;
+			no-map;
+		};
+
+		qhee_code: qhee-code@85800000 {
+			reg = <0x0 0x85800000 0x0 0x600000>;
+			no-map;
+		};
+
+		rmtfs_mem: memory@85e00000 {
+			compatible = "qcom,rmtfs-mem";
+			reg = <0x0 0x85e00000 0x0 0x200000>;
+			no-map;
+
+			qcom,client-id = <1>;
+			qcom,vmid = <15>;
+		};
+
+		smem_region: smem-mem@86000000 {
+			reg = <0x0 0x86000000 0x0 0x200000>;
+			no-map;
+		};
+
+		tz_mem: memory@86200000 {
+			reg = <0x0 0x86200000 0x0 0x3300000>;
+			no-map;
+		};
+
+		unknown_region: memory@89500000 {
+			reg = <0x0 0x89500000 0x0 0x3100000>;
+			no-map;
+		};
+
+		mpss_region: mpss@8ac00000 {
+			reg = <0x0 0x8ac00000 0x0 0x7e00000>;
+			no-map;
+		};
+
+		adsp_region: adsp@92a00000 {
+			reg = <0x0 0x92a00000 0x0 0x1e00000>;
+			no-map;
+		};
+
+		mba_region: mba@94800000 {
+			reg = <0x0 0x94800000 0x0 0x200000>;
+			no-map;
+		};
+
+		buffer_mem: tzbuffer@94a00000 {
+			reg = <0x0 0x94a00000 0x0 0x100000>;
+			no-map;
+		};
+
+		venus_region: venus@9f800000 {
+			reg = <0x0 0x9f800000 0x0 0x800000>;
+			no-map;
+		};
+
+		adsp_mem: adsp-region@f6000000 {
+			reg = <0x0 0xf6000000 0x0 0x800000>;
+			no-map;
+		};
+
+		qseecom_mem: qseecom-region@f6800000 {
+			reg = <0x0 0xf6800000 0x0 0x1400000>;
+			no-map;
+		};
+
+		zap_shader_region: gpu@fed00000 {
+			compatible = "shared-dma-pool";
+			reg = <0x0 0xfed00000 0x0 0xa00000>;
+			no-map;
+		};
+	};
+
 	cpus {
 		#address-cells = <2>;
 		#size-cells = <0>;
@@ -53,6 +139,7 @@
 						&PERF_CLUSTER_SLEEP_1
 						&PERF_CLUSTER_SLEEP_2>;
 			capacity-dmips-mhz = <1126>;
+			qcom,freq-domain = <&cpufreq_hw 1>;
 			#cooling-cells = <2>;
 			next-level-cache = <&L2_1>;
 			L2_1: l2-cache {
@@ -72,6 +159,7 @@
 						&PERF_CLUSTER_SLEEP_1
 						&PERF_CLUSTER_SLEEP_2>;
 			capacity-dmips-mhz = <1126>;
+			qcom,freq-domain = <&cpufreq_hw 1>;
 			#cooling-cells = <2>;
 			next-level-cache = <&L2_1>;
 		};
@@ -87,6 +175,7 @@
 						&PERF_CLUSTER_SLEEP_1
 						&PERF_CLUSTER_SLEEP_2>;
 			capacity-dmips-mhz = <1126>;
+			qcom,freq-domain = <&cpufreq_hw 1>;
 			#cooling-cells = <2>;
 			next-level-cache = <&L2_1>;
 		};
@@ -102,6 +191,7 @@
 						&PERF_CLUSTER_SLEEP_1
 						&PERF_CLUSTER_SLEEP_2>;
 			capacity-dmips-mhz = <1126>;
+			qcom,freq-domain = <&cpufreq_hw 1>;
 			#cooling-cells = <2>;
 			next-level-cache = <&L2_1>;
 		};
@@ -117,6 +207,7 @@
 						&PWR_CLUSTER_SLEEP_1
 						&PWR_CLUSTER_SLEEP_2>;
 			capacity-dmips-mhz = <1024>;
+			qcom,freq-domain = <&cpufreq_hw 0>;
 			#cooling-cells = <2>;
 			next-level-cache = <&L2_0>;
 			L2_0: l2-cache {
@@ -136,6 +227,7 @@
 						&PWR_CLUSTER_SLEEP_1
 						&PWR_CLUSTER_SLEEP_2>;
 			capacity-dmips-mhz = <1024>;
+			qcom,freq-domain = <&cpufreq_hw 0>;
 			#cooling-cells = <2>;
 			next-level-cache = <&L2_0>;
 		};
@@ -151,6 +243,7 @@
 						&PWR_CLUSTER_SLEEP_1
 						&PWR_CLUSTER_SLEEP_2>;
 			capacity-dmips-mhz = <1024>;
+			qcom,freq-domain = <&cpufreq_hw 0>;
 			#cooling-cells = <2>;
 			next-level-cache = <&L2_0>;
 		};
@@ -166,6 +259,7 @@
 						&PWR_CLUSTER_SLEEP_1
 						&PWR_CLUSTER_SLEEP_2>;
 			capacity-dmips-mhz = <1024>;
+			qcom,freq-domain = <&cpufreq_hw 0>;
 			#cooling-cells = <2>;
 			next-level-cache = <&L2_0>;
 		};
@@ -333,86 +427,117 @@
 		method = "smc";
 	};
 
-	reserved-memory {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
+	cpu_silver_opp_table: cpu-silver-opp-table {
+		compatible = "operating-points-v2-qcom-cpu";
+		opp-shared;
 
-		wlan_msa_guard: wlan-msa-guard@85600000 {
-			reg = <0x0 0x85600000 0x0 0x100000>;
-			no-map;
+		opp-614400000 {
+			opp-hz = /bits/ 64 <614400000>;
+			required-opps = <&cprh_silver_opp1>;
 		};
-
-		wlan_msa_mem: wlan-msa-mem@85700000 {
-			reg = <0x0 0x85700000 0x0 0x100000>;
-			no-map;
+		opp-1094400000 {
+			opp-hz = /bits/ 64 <1094400000>;
+			required-opps = <&cprh_silver_opp2>;
 		};
-
-		qhee_code: qhee-code@85800000 {
-			reg = <0x0 0x85800000 0x0 0x600000>;
-			no-map;
-		};
-
-		rmtfs_mem: memory@85e00000 {
-			compatible = "qcom,rmtfs-mem";
-			reg = <0x0 0x85e00000 0x0 0x200000>;
-			no-map;
-
-			qcom,client-id = <1>;
-			qcom,vmid = <15>;
-		};
-
-		smem_region: smem-mem@86000000 {
-			reg = <0 0x86000000 0 0x200000>;
-			no-map;
-		};
-
-		tz_mem: memory@86200000 {
-			reg = <0x0 0x86200000 0x0 0x3300000>;
-			no-map;
-		};
-
-		mpss_region: mpss@8ac00000 {
-			reg = <0x0 0x8ac00000 0x0 0x7e00000>;
-			no-map;
-		};
-
-		adsp_region: adsp@92a00000 {
-			reg = <0x0 0x92a00000 0x0 0x1e00000>;
-			no-map;
-		};
-
-		mba_region: mba@94800000 {
-			reg = <0x0 0x94800000 0x0 0x200000>;
-			no-map;
-		};
-
-		buffer_mem: tzbuffer@94a00000 {
-			reg = <0x0 0x94a00000 0x0 0x100000>;
-			no-map;
-		};
-
-		venus_region: venus@9f800000 {
-			reg = <0x0 0x9f800000 0x0 0x800000>;
-			no-map;
-		};
-
-		adsp_mem: adsp-region@f6000000 {
-			reg = <0x0 0xf6000000 0x0 0x800000>;
-			no-map;
-		};
-
-		qseecom_mem: qseecom-region@f6800000 {
-			reg = <0x0 0xf6800000 0x0 0x1400000>;
-			no-map;
-		};
-
-		zap_shader_region: gpu@fed00000 {
-			compatible = "shared-dma-pool";
-			reg = <0x0 0xfed00000 0x0 0xa00000>;
-			no-map;
+		opp-1843200000 {
+			opp-hz = /bits/ 64 <1843200000>;
+			required-opps = <&cprh_silver_opp3>;
 		};
 	};
+
+	cpu_gold_opp_table: cpu-gold-opp-table {
+		compatible = "operating-points-v2-qcom-cpu";
+		opp-shared;
+
+		opp-614400000 {
+			opp-hz = /bits/ 64 <614400000>;
+			required-opps = <&cprh_gold_opp1>;
+		};
+		opp-1094400000 {
+			opp-hz = /bits/ 64 <1094400000>;
+			required-opps = <&cprh_gold_opp2>;
+		};
+		opp-1843200000 {
+			opp-hz = /bits/ 64 <1843200000>;
+			required-opps = <&cprh_gold_opp3>;
+		};
+
+		/* Gold cluster OPPs: temporarily commented out because
+		 * of hardcoded values in cpufreq-hw */
+/*
+		opp-787200000 {
+			opp-hz = /bits/ 64 <787200000>;
+			required-opps = <&cprh_gold_opp1>;
+		};
+		opp-1344000000 {
+			opp-hz = /bits/ 64 <1344000000>;
+			required-opps = <&cprh_gold_opp2>;
+		};
+		opp-1670400000 {
+			opp-hz = /bits/ 64 <1670400000>;
+			required-opps = <&cprh_gold_opp3>;
+		};
+		opp-2150400000 {
+			opp-hz = /bits/ 64 <2150400000>;
+			required-opps = <&cprh_gold_opp4>;
+		};
+		opp-2515200000 {
+			opp-hz = /bits/ 64 <2515200000>;
+			required-opps = <&cprh_gold_opp5>;
+		};
+*/
+	};
+
+	cprh_silver_opp_table: cpr-silver-opp-table {
+		compatible = "operating-points-v2-qcom-level";
+
+		cprh_silver_opp1: opp1 {
+			opp-level = <1>;
+			opp-hz = /bits/ 64 <614400000>;
+			//qcom,opp-fuse-level = <1>;
+		};
+		cprh_silver_opp2: opp2 {
+			opp-level = <2>;
+			opp-hz = /bits/ 64 <1094400000>;
+			//qcom,opp-fuse-level = <2>;
+		};
+		cprh_silver_opp3: opp3 {
+			opp-level = <3>;
+			opp-hz = /bits/ 64 <1843200000>;
+			qcom,opp-fuse-level = <3>;
+		};
+	};
+
+	cprh_gold_opp_table: cpr-gold-opp-table {
+		compatible = "operating-points-v2-qcom-level";
+
+		cprh_gold_opp1: opp1 {
+			opp-level = <1>;
+			opp-hz = /bits/ 64 <614400000>;
+			//qcom,opp-fuse-level = <1>;
+		};
+		cprh_gold_opp2: opp2 {
+			opp-level = <2>;
+			opp-hz = /bits/ 64 <1094400000>;
+			//qcom,opp-fuse-level = <2>;
+		};
+		cprh_gold_opp3: opp3 {
+			opp-level = <3>;
+			opp-hz = /bits/ 64 <1843200000>;
+			//qcom,opp-fuse-level = <3>;
+		};
+/*
+		cprh_gold_opp4: opp4 {
+			opp-level = <4>;
+			qcom,opp-fuse-level = <4>;
+		};
+		cprh_gold_opp5: opp5 {
+			opp-level = <5>;
+			qcom,opp-fuse-level = <5>;
+		};
+*/
+	};
+
 
 	rpm-glink {
 		compatible = "qcom,glink-rpm";
@@ -723,20 +848,201 @@
 			reg = <0x00778000 0x7000>;
 		};
 
-		qfprom: qfprom@780000 {
+		qfprom: qfprom@784000 {
 			compatible = "qcom,qfprom";
-			reg = <0x00780000 0x621c>;
+			reg = <0x00784000 0x2220>;
 			#address-cells = <1>;
 			#size-cells = <1>;
 
-			qusb2_hstx_trim: hstx-trim@240 {
-				reg = <0x240 0x1>;
-				bits = <25 3>;
+			cpr_efuse_speedbin: speedbin@133 {
+				reg = <0x133 0x8>;
+				bits = <5 3>;
 			};
 
-			gpu_speed_bin: gpu_speed_bin@41a0 {
-				reg = <0x41a0 0x1>;
-				bits = <21 7>;
+			/* CPR Quotients: Power Cluster */
+			cpr_quot00_pwrcl: quot00_pwrcl@221 {
+				reg = <0x221 0x4>;
+				bits = <4 12>;
+			};
+
+			cpr_quot01_pwrcl: quot01_pwrcl@239 {
+				reg = <0x239 0x4>;
+				bits = <1 12>;
+			};
+
+			cpr_quot02_pwrcl: quot02_pwrcl@21d {
+				reg = <0x21d 0x4>;
+				bits = <0 12>;
+			};
+
+			cpr_quot_offset01_pwrcl: qoff01_pwrcl@23a {
+				reg = <0x23a 0x4>;
+				bits = <5 7>;
+			};
+
+			cpr_quot_offset02_pwrcl: qoff02_pwrcl@223 {
+				reg = <0x223 0x4>;
+				bits = <0 7>;
+			};
+
+			/* CPR Quotients: Performance Cluster */
+			cpr_quot00_perfcl: quot00_perfcl@22e {
+				reg = <0x22e 0x4>;
+				bits = <5 11>;
+			};
+
+			cpr_quot10_perfcl: quot10_perfcl@230 {
+				reg = <0x230 0x4>;
+				bits = <0 1>;
+			};
+
+			cpr_quot01_perfcl: quot01_perfcl@230 {
+				reg = <0x230 0x4>;
+				bits = <1 12>;
+			};
+
+			cpr_quot02_perfcl: quot02_perfcl@22d {
+				reg = <0x22d 0x4>;
+				bits = <1 12>;
+			};
+
+			cpr_quot03_perfcl: quot03_perfcl@22b {
+				reg = <0x22b 0x8>;
+				bits = <5 12>;
+			};
+
+			cpr_quot04_perfcl: quot04_perfcl@23d {
+				reg = <0x23d 0x4>;
+				bits = <8 12>;
+			};
+
+			cpr_quot_offset01_perfcl: qoff01_perfcl@233 {
+				reg = <0x233 0x4>;
+				bits = <3 7>;
+			};
+
+			cpr_quot_offset02_perfcl: qoff02_perfcl@232 {
+				reg = <0x232 0x4>;
+				bits = <4 7>;
+			};
+
+			cpr_quot_offset03_perfcl: qoff03_perfcl@231 {
+				reg = <0x231 0x4>;
+				bits = <5 7>;
+			};
+
+			cpr_quot_offset04_perfcl: qoff04_perfcl@237 {
+				reg = <0x237 0x4>;
+				bits = <4 4>;
+			};
+
+			cpr_quot_offset14_perfcl: qoff14_perfcl@230 {
+				reg = <0x230 0x4>;
+				bits = <0 3>;
+			};
+
+			/* CPR Init Voltage: Power Cluster */
+			cpr_init_voltage00_pwrcl: ivolt00_pwrcl@21c {
+				reg = <0x21c 0x4>;
+				bits = <2 6>;
+			};
+
+			cpr_init_voltage01_pwrcl: ivolt01_pwrcl@238 {
+				reg = <0x238 0x4>;
+				bits = <3 6>;
+			};
+
+			cpr_init_voltage02_pwrcl: ivolt02_pwrcl@219 {
+				reg = <0x219 0x4>;
+				bits = <8 6>;
+			};
+
+			/* CPR Init Voltage: Performance Cluster */
+			cpr_init_voltage00_perfcl: ivolt00_perfcl@22a {
+				reg = <0x22a 0x4>;
+				bits = <1 6>;
+			};
+
+			cpr_init_voltage01_perfcl: ivolt01_perfcl@22a {
+				reg = <0x22a 0x4>;
+				bits = <7 6>;
+			};
+
+			cpr_init_voltage02_perfcl: ivolt02_perfcl@229 {
+				reg = <0x229 0x4>;
+				bits = <3 6>;
+			};
+
+			cpr_init_voltage03_perfcl: ivolt03_perfcl@228 {
+				reg = <0x228 0x4>;
+				bits = <5 6>;
+			};
+
+			cpr_init_voltage04_perfcl: ivolt04_perfcl@235 {
+				reg = <0x235 0x4>;
+				bits = <2 6>;
+			};
+
+			/* CPR Ring Oscillator: Power Cluster */
+			cpr_ro_sel00_pwrcl: rosel00_pwrcl@219 {
+				reg = <0x219 0x4>;
+				bits = <4 4>;
+			};
+
+			cpr_ro_sel01_pwrcl: rosel01_pwrcl@20f {
+				reg = <0x20f 0x4>;
+				bits = <0 4>;
+			};
+
+			cpr_ro_sel02_pwrcl: rosel02_pwrcl@218 {
+				reg = <0x218 0x4>;
+				bits = <0 4>;
+			};
+
+			/* CPR Ring Oscillator: Performance Cluster */
+			cpr_ro_sel00_perfcl: rosel00_perfcl@22c {
+				reg = <0x22f 0x4>;
+				bits = <5 3>;
+			};
+
+			cpr_ro_sel10_perfcl: rosel10_perfcl@228 {
+				reg = <0x228 0x4>;
+				bits = <0 1>;
+			};
+
+			cpr_ro_sel01_perfcl: rosel01_perfcl@228 {
+				reg = <0x228 0x4>;
+				bits = <1 4>;
+			};
+
+			cpr_ro_sel02_perfcl: rosel02_perfcl@22c {
+				reg = <0x22f 0x4>;
+				bits = <1 4>;
+			};
+
+			cpr_ro_sel03_perfcl: rosel03_perfcl@22c {
+				reg = <0x22e 0x4>;
+				bits = <5 4>;
+			};
+
+			cpr_ro_sel04_perfcl: rosel04_perfcl@210 {
+				reg = <0x211 0x4>;
+				bits = <6 4>;
+			};
+
+			cpr_fuse_revision: cpr_fusing_rev@23b {
+				reg = <0x23b 0x1>;
+				bits = <4 3>;
+			};
+
+			qusb2_hstx_trim: hstx-trim@243 {
+				reg = <0x243 0x1>;
+				bits = <1 3>;
+			};
+
+			gpu_speed_bin: gpu_speed_bin@1a2 {
+				reg = <0x1a2 0x1>;
+				bits = <5 7>;
 			};
 		};
 
@@ -845,6 +1151,131 @@
 			clocks = <&rpmcc RPM_SMD_MMSSNOC_AXI_CLK>,
 				 <&rpmcc RPM_SMD_MMSSNOC_AXI_CLK_A>,
 				 <&mmcc AHB_CLK_SRC>;
+		};
+
+		saw1: power-controller@17812000 {
+			compatible = "qcom,sdm660-gold-saw2-v4.1-l2", "qcom,saw2";
+			reg = <0x017812000 0x1000>;
+		};
+
+		saw0: power-controller@17912000 {
+			compatible = "qcom,sdm660-gold-saw2-v4.1-l2", "qcom,saw2";
+			reg = <0x017912000 0x1000>;
+		};
+
+		cpufreq_hw: cpufreq_hw@17816000 {
+			compatible = "qcom,cpufreq-hw-8998";
+status="disabled";
+			reg = <0x0179c1000 0x1000>, <0x0179c3000 0x1000>,
+			      <0x0179c0000 0x1000>, <0x0179c2000 0x1000>;
+			reg-names = "freq-domain0", "freq-domain1",
+				    "osm-domain0", "osm-domain1";
+
+	//		power-domains = <&apc0_cprh>, <&apc1_cprh>;
+	//		power-domain-names = "power-domain0", "power-domain1";
+
+			clocks = <&rpmcc RPM_SMD_XO_A_CLK_SRC>,
+				 <&gcc HMSS_GPLL0_CLK_SRC>;
+			clock-names = "xo", "alternate";
+
+			#freq-domain-cells = <1>;
+		};
+
+		/* Silver Cluster */
+		apc0_cprh: cprh-silver@179c8000 {
+			compatible = "qcom,sdm630-cprh-silver";
+			reg = <0x0179c8000 0x4000>;
+
+			clocks = <&xo_board>, <&gcc GCC_HMSS_RBCPR_CLK>;
+			clock-names = "ref", "core";
+			#power-domain-cells = <0>;
+			operating-points-v2 = <&cprh_silver_opp_table>;
+			//operating-points-v2 = <&cpu_silver_opp_table>;
+
+			nvmem-cells = <&cpr_efuse_speedbin>,
+				      <&cpr_quot00_pwrcl>,
+				      <&cpr_quot01_pwrcl>,
+				      <&cpr_quot02_pwrcl>,
+				      <&cpr_quot_offset01_pwrcl>,
+				      <&cpr_quot_offset02_pwrcl>,
+				      <&cpr_init_voltage00_pwrcl>,
+				      <&cpr_init_voltage01_pwrcl>,
+				      <&cpr_init_voltage02_pwrcl>,
+				      <&cpr_ro_sel00_pwrcl>,
+				      <&cpr_ro_sel01_pwrcl>,
+				      <&cpr_ro_sel02_pwrcl>,
+				      <&cpr_fuse_revision>;
+
+			nvmem-cell-names = "cpr_speedbin",
+					   "cpr_quotient1",
+					   "cpr_quotient2",
+					   "cpr_quotient3",
+					   "cpr_quotient_offset2",
+					   "cpr_quotient_offset3",
+					   "cpr_init_voltage1",
+					   "cpr_init_voltage2",
+					   "cpr_init_voltage3",
+					   "cpr_ring_osc1",
+					   "cpr_ring_osc2",
+					   "cpr_ring_osc3",
+					   "cpr_fuse_revision";
+		};
+
+		/* Gold cluster */
+		apc1_cprh: cprh-gold@179c4000 {
+			compatible = "qcom,sdm630-cprh-gold";
+			reg = <0x0179c4000 0x4000>;
+
+			clocks = <&xo_board>, <&gcc GCC_HMSS_RBCPR_CLK>;
+			clock-names = "ref", "core";
+			#power-domain-cells = <0>;
+			operating-points-v2 = <&cprh_gold_opp_table>;
+			//operating-points-v2 = <&cpu_gold_opp_table>;
+
+			nvmem-cells = <&cpr_efuse_speedbin>,
+				      <&cpr_quot00_perfcl>, // &cpr_quot10_perfcl>,
+				      <&cpr_quot01_perfcl>,
+				      <&cpr_quot02_perfcl>,
+				      <&cpr_quot03_perfcl>,
+				      <&cpr_quot04_perfcl>,
+				      <&cpr_quot_offset01_perfcl>,
+				      <&cpr_quot_offset02_perfcl>,
+				      <&cpr_quot_offset03_perfcl>,
+				      <&cpr_quot_offset04_perfcl>, // &cpr_quot_offset14_perfcl>,
+				      <&cpr_init_voltage00_perfcl>,
+				      <&cpr_init_voltage01_perfcl>,
+				      <&cpr_init_voltage02_perfcl>,
+				      <&cpr_init_voltage03_perfcl>,
+				      <&cpr_init_voltage04_perfcl>,
+				      <&cpr_ro_sel00_perfcl>, // &cpr_ro_sel10_perfcl>,
+				      <&cpr_ro_sel01_perfcl>,
+				      <&cpr_ro_sel02_perfcl>,
+				      <&cpr_ro_sel03_perfcl>,
+				      <&cpr_ro_sel04_perfcl>,
+				      <&cpr_fuse_revision>;
+
+			nvmem-cell-names = "cpr_speedbin",
+					   "cpr_quotient1",
+					   "cpr_quotient2",
+					   "cpr_quotient3",
+					   "cpr_quotient4",
+					   "cpr_quotient5",
+					   "cpr_quotient_offset2",
+					   "cpr_quotient_offset3",
+					   "cpr_quotient_offset4",
+					   "cpr_quotient_offset5",
+					   "cpr_init_voltage1",
+					   "cpr_init_voltage2",
+					   "cpr_init_voltage3",
+					   "cpr_init_voltage4",
+					   "cpr_init_voltage5",
+					   "cpr_ring_osc1",
+					   "cpr_ring_osc2",
+					   "cpr_ring_osc3",
+					   "cpr_ring_osc4",
+					   "cpr_ring_osc5",
+					   "cpr_fuse_revision";
+		
 		};
 
 		tsens: thermal-sensor@10ae000 {
