@@ -23,17 +23,21 @@ properties:
           - qcom,cpufreq-epss
 
   reg:
+    description: Base address and size of the RBCPR register region
     minItems: 2
     maxItems: 2
 
   reg-names:
     description:
-      Frequency domain register region for each domain.
-    items:
-      - const: "freq-domain0"
-      - const: "freq-domain1"
+      Frequency domain register region for each domain. If OSM programming
+      does not happen in the bootloader and has to be done in this driver,
+      then also the OSM domain region osm-domain[0-1] has to be provided.
+    minItems: 2
+    maxItems: 2
 
   clock-names:
+    minItems: 2
+    maxItems: 2
     - const: xo
     - const: ref
 
@@ -53,9 +57,28 @@ properties:
       property with phandle to a cpufreq_hw followed by the Domain ID(0/1)
       in the CPU DT node.
 
+allOf:
+ - if:
+     properties:
+       reg-names:
+         contains:
+           const: qcom,cpufreq-hw-8998
+   then:
+     properties:
+       reg:
+         minItems: 4
+         maxItems: 4
+       reg-names:
+         items:
+           - const: "freq-domain0"
+           - const: "freq-domain1"
+           - const: "osm-domain0"
+           - const: "osm-domain1"
+
 required:
   - compatible
   - reg
+  - reg-names
   - clock-names
   - clocks
   - "#freq-domain-cells"
