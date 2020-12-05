@@ -1,0 +1,379 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) 2020, AngeloGioacchino Del Regno
+ *                     <angelogioacchino.delregno@somainline.org>
+ */
+
+#include "msm8998-mtp.dtsi"
+
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
+#include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
+
+/ {
+	/* required for bootloader to select correct board */
+	qcom,board-id = <8 0>;
+
+	board_vbat: vbat-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "VBAT";
+
+		regulator-min-microvolt = <4000000>;
+		regulator-max-microvolt = <4000000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
+	/* The gpio-vibrator driver enforces requiring a regulator */
+	vib_vreg: vib-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "vib";
+
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+	};
+
+	cam0_vdig_vreg: cam0_vdig {
+		compatible = "regulator-fixed";
+		regulator-name = "cam0_vdig";
+		startup-delay-us = <0>;
+		enable-active-high;
+		gpio = <&tlmm 21 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&cam0_vdig_default>;
+	};
+
+	cam1_vdig_vreg: cam1_vdig {
+		compatible = "regulator-fixed";
+		regulator-name = "cam1_vdig";
+		startup-delay-us = <0>;
+		enable-active-high;
+		gpio = <&tlmm 25 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&cam1_vdig_default>;
+		vin-supply = <&vreg_s3a_1p35>;
+	};
+
+	cam_vio_vreg: cam_vio_vreg {
+		compatible = "regulator-fixed";
+		regulator-name = "cam_vio_vreg";
+		startup-delay-us = <0>;
+		enable-active-high;
+		gpio = <&pmi8998_gpio 1 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&cam_vio_default>;
+		vin-supply = <&vreg_lvs1a_1p8>;
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		input-name = "gpio-keys";
+		label = "Side buttons";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vol_down_pin_a>, <&cam_focus_pin_a>,
+			    <&cam_snapshot_pin_a>;
+		vol_down {
+			label = "Volume Down";
+			gpios = <&pm8998_gpio 5 GPIO_ACTIVE_LOW>;
+			linux,input-type = <1>;
+			linux,code = <KEY_VOLUMEDOWN>;
+			gpio-key,wakeup;
+			debounce-interval = <15>;
+		};
+
+		camera_snapshot {
+			label = "Camera Snapshot";
+			gpios = <&pm8998_gpio 7 GPIO_ACTIVE_LOW>;
+			linux,input-type = <1>;
+			linux,code = <KEY_CAMERA>;
+			debounce-interval = <15>;
+		};
+
+		camera_focus {
+			label = "Camera Focus";
+			gpios = <&pm8998_gpio 8 GPIO_ACTIVE_LOW>;
+			linux,input-type = <1>;
+			linux,code = <KEY_CAMERA_FOCUS>;
+			debounce-interval = <15>;
+		};
+	};
+
+	vibrator {
+		compatible = "gpio-vibrator";
+		enable-gpios = <&pmi8998_gpio 5 GPIO_ACTIVE_HIGH>;
+		vcc-supply = <&vib_vreg>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vib_default>;
+	};
+
+	/*
+	 * Until we hook up type-c detection, we
+	 * have to stick with this. But it works.
+	 */
+	extcon_usb: extcon-usb {
+		compatible = "linux,extcon-usb-gpio";
+		id-gpio = <&pmi8998_gpio 4 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+/* Disable UFS until card quirks are in to avoid hard-brick */
+&ufshc {
+	status = "disabled";
+};
+
+&ufsphy {
+	status = "disabled";
+};
+
+&remoteproc_adsp {
+	firmware-name = "adsp.mdt";
+};
+
+&blsp1_i2c5 {
+	status = "okay";
+
+	touchscreen: synaptics-rmi4-i2c@2c {
+		compatible = "syna,rmi4-i2c";
+		reg = <0x2c>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		interrupts-extended = <&tlmm 125 IRQ_TYPE_EDGE_FALLING>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&ts_int_active &ts_lcd_id_active>;
+
+		syna,reset-delay-ms = <220>;
+		syna,startup-delay-ms = <220>;
+
+		rmi4-f01@1 {
+			reg = <0x01>;
+			syna,nosleep-mode = <1>;
+		};
+
+		rmi4-f11@11 {
+			reg = <0x11>;
+			syna,sensor-type = <1>;
+		};
+	};
+};
+
+&blsp1_uart3 {
+	bluetooth {
+		clocks = <&rpmcc RPM_SMD_RF_CLK2_PIN>;
+	};
+};
+
+&pmi8998_wled {
+	status = "ok";
+	default-brightness = <512>;
+};
+
+&dsi0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	vdd-supply = <&vreg_l1a_0p875>;
+	vdda-supply = <&vreg_l2a_1p2>;
+
+	panel: panel@0 {
+		reg = <0>;
+
+		reset-gpios = <&tlmm 94 GPIO_ACTIVE_HIGH>;
+		disp-te-gpios = <&tlmm 10 GPIO_ACTIVE_HIGH>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&panel_reset_n &mdp_vsync_n>;
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&dsi0_out>;
+			};
+		};
+	};
+};
+
+&dsi0_out {
+	remote-endpoint = <&panel_in>;
+	data-lanes = <0 1 2 3>;
+};
+
+&pm8998_pon {
+	resin {
+		compatible = "pm8941-resin";
+		interrupts = <GIC_SPI 0x8 1 IRQ_TYPE_EDGE_BOTH>;
+		debounce = <15625>;
+		bias-pull-up;
+		linux,code = <KEY_VOLUMEUP>;
+	};
+};
+
+&pm8005_gpio {
+	ear_en_default: ear-en-active {
+		pins = "gpio1";
+		function = PMIC_GPIO_FUNC_NORMAL;
+		output-low;
+		drive-push-pull;
+		bias-disable;
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_HIGH>;
+		power-source = <1>;
+	};
+};
+
+&pm8998_gpio {
+	vol_down_pin_a: vol-down-active {
+		pins = "gpio5";
+		function = PMIC_GPIO_FUNC_NORMAL;
+		input-enable;
+		bias-pull-up;
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_NO>;
+	};
+
+	cam_focus_pin_a: cam-focus-btn-active {
+		pins = "gpio7";
+		function = PMIC_GPIO_FUNC_NORMAL;
+		input-enable;
+		bias-pull-up;
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_NO>;
+	};
+
+	cam_snapshot_pin_a: cam-snapshot-btn-active {
+		pins = "gpio8";
+		function = PMIC_GPIO_FUNC_NORMAL;
+		input-enable;
+		bias-pull-up;
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_NO>;
+	};
+};
+
+&pmi8998_gpio {
+	cam_vio_default: cam-vio-active {
+		pins = "gpio1";
+		function = PMIC_GPIO_FUNC_NORMAL;
+		output-low;
+		drive-push-pull;
+		bias-disable;
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_HIGH>;
+		power-source = <1>;
+	};
+
+	vib_default: vib-en {
+		pins = "gpio5";
+		function = PMIC_GPIO_FUNC_NORMAL;
+		output-low;
+		drive-push-pull;
+		bias-disable;
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_NO>;
+		power-source = <0>;
+	};
+};
+
+/*
+ * SoMC Yoshino platform has minor vreg differences with MTP:
+ * just a very few regulators need a little lower output voltage
+ */
+&vreg_l6a_1p8 {
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+};
+
+&vreg_l14a_1p88 {
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+};
+
+&vreg_l19a_3p0 {
+	regulator-min-microvolt = <2700000>;
+	regulator-max-microvolt = <2700000>;
+};
+
+&vreg_l28_3p0 {
+	regulator-min-microvolt = <3000000>;
+	regulator-max-microvolt = <3000000>;
+};
+
+&tlmm {
+	gpio-reserved-ranges = <8 4>;
+
+	msm_mclk0_default: msm-mclk0-active {
+		pinmux {
+			pins = "gpio13";
+			function = "cam_mclk";
+		};
+
+		pinconf {
+			pins = "gpio13";
+			bias-disable;
+			drive-strength = <2>;
+		};
+	};
+
+	msm_mclk1_default: msm-mclk1-active {
+		pinmux {
+			pins = "gpio14";
+			function = "cam_mclk";
+		};
+
+		pinconf {
+			pins = "gpio14";
+			bias-disable;
+			drive-strength = <2>;
+		};
+	};
+
+	cam0_vdig_default: cam0-vdig-default {
+		pins = "gpio21";
+		function = "gpio";
+		bias-disable;
+		drive-strength = <2>;
+	};
+
+	cam1_vdig_default: cam1-vdig-default {
+		pins = "gpio25";
+		function = "gpio";
+		bias-disable;
+		drive-strength = <2>;
+	};
+
+	cam1_rst_default: cam1-rst-n {
+		pins = "gpio28";
+		function = "gpio";
+		bias-disable;
+		drive-strength = <2>;
+	};
+
+	cam0_rst_default: cam0-rst-n {
+		pins = "gpio30";
+		function = "gpio";
+		bias-disable;
+		drive-strength = <2>;
+	};
+
+	ts_int_active: ts-int-active {
+		pins = "gpio125";
+		drive-strength = <2>;
+		bias-pull-down;
+		input-enable;
+	};
+
+	ts_lcd_id_active: ts-lcd-id-active {
+		pins = "gpio76";
+		drive-strength = <2>;
+		bias-disable;
+		output-low;
+	};
+
+	panel_reset_n: panel-rst-n {
+		pins = "gpio94";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	mdp_vsync_n: mdp-vsync-n {
+		pins = "gpio59";
+		function = "mdp_vsync_a";
+		drive-strength = <2>;
+		bias-disable;
+	};
+};
