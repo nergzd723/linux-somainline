@@ -160,6 +160,8 @@
 };
 
 &mdss {
+	compatible = "qcom,sdm660-mdss";
+
 	dsi1: dsi@c996000 {
 		compatible = "qcom,mdss-dsi-ctrl";
 		reg = <0x0c996000 0x400>;
