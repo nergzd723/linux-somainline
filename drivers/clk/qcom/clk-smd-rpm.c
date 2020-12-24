@@ -406,6 +406,37 @@ static const struct clk_ops clk_smd_rpm_branch_ops = {
 	.unprepare	= clk_smd_rpm_unprepare,
 };
 
+/* mdm9607 */
+DEFINE_CLK_SMD_RPM_BRANCH(mdm9607, xo_clk_src, xo_a_clk_src, QCOM_SMD_RPM_MISC_CLK, 0,
+								19200000);
+DEFINE_CLK_SMD_RPM(mdm9607, pcnoc_clk, pcnoc_a_clk, QCOM_SMD_RPM_BUS_CLK, 0);
+DEFINE_CLK_SMD_RPM(mdm9607, bimc_clk, bimc_a_clk, QCOM_SMD_RPM_MEM_CLK, 0);
+DEFINE_CLK_SMD_RPM(mdm9607, qpic_clk, qpic_a_clk, QCOM_SMD_RPM_QPIC_CLK, 0);
+DEFINE_CLK_SMD_RPM_QDSS(mdm9607, qdss_clk, qdss_a_clk, QCOM_SMD_RPM_MISC_CLK, 1);
+DEFINE_CLK_SMD_RPM_XO_BUFFER(mdm9607, bb_clk1, bb_clk1_a, 1);
+DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(mdm9607, bb_clk1_pin, bb_clk1_a_pin, 1);
+static struct clk_smd_rpm *mdm9607_clks[] = {
+	[RPM_SMD_XO_CLK_SRC] = &mdm9607_xo_clk_src,
+	[RPM_SMD_XO_A_CLK_SRC] = &mdm9607_xo_a_clk_src,
+	[RPM_SMD_PCNOC_CLK]		= &mdm9607_pcnoc_clk,
+	[RPM_SMD_PCNOC_A_CLK]		= &mdm9607_pcnoc_a_clk,
+	[RPM_SMD_BIMC_CLK]		= &mdm9607_bimc_clk,
+	[RPM_SMD_BIMC_A_CLK]		= &mdm9607_bimc_a_clk,
+	[RPM_SMD_QPIC_CLK]		= &mdm9607_qpic_clk,
+	[RPM_SMD_QPIC_CLK_A]		= &mdm9607_qpic_a_clk,
+	[RPM_SMD_QDSS_CLK]		= &mdm9607_qdss_clk,
+	[RPM_SMD_QDSS_A_CLK]		= &mdm9607_qdss_a_clk,
+	[RPM_SMD_BB_CLK1]		= &mdm9607_bb_clk1,
+	[RPM_SMD_BB_CLK1_A]		= &mdm9607_bb_clk1_a,
+	[RPM_SMD_BB_CLK1_PIN]		= &mdm9607_bb_clk1_pin,
+	[RPM_SMD_BB_CLK1_A_PIN]		= &mdm9607_bb_clk1_a_pin,
+};
+
+static const struct rpm_smd_clk_desc rpm_clk_mdm9607 = {
+	.clks = mdm9607_clks,
+	.num_clks = ARRAY_SIZE(mdm9607_clks),
+};
+
 /* msm8916 */
 DEFINE_CLK_SMD_RPM(msm8916, pcnoc_clk, pcnoc_a_clk, QCOM_SMD_RPM_BUS_CLK, 0);
 DEFINE_CLK_SMD_RPM(msm8916, snoc_clk, snoc_a_clk, QCOM_SMD_RPM_BUS_CLK, 1);
@@ -1060,6 +1091,7 @@ static const struct rpm_smd_clk_desc rpm_clk_sdm660 = {
 };
 
 static const struct of_device_id rpm_smd_clk_match_table[] = {
+	{ .compatible = "qcom,rpmcc-mdm9607", .data = &rpm_clk_mdm9607 },
 	{ .compatible = "qcom,rpmcc-msm8916", .data = &rpm_clk_msm8916 },
 	{ .compatible = "qcom,rpmcc-msm8936", .data = &rpm_clk_msm8936 },
 	{ .compatible = "qcom,rpmcc-msm8974", .data = &rpm_clk_msm8974 },
