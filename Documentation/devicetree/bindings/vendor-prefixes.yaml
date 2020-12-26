@@ -896,6 +896,8 @@ patternProperties:
     description: Qualcomm Atheros, Inc.
   "^qcom,.*":
     description: Qualcomm Technologies, Inc
+  "^quectel,.*":
+    description: Quectel Wireless Solutions
   "^qemu,.*":
     description: QEMU, a generic and open source machine emulator and virtualizer
   "^qi,.*":
