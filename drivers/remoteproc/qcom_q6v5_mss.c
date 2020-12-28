@@ -211,6 +211,7 @@ struct q6v5 {
 };
 
 enum {
+	MSS_MDM9607,
 	MSS_MSM8916,
 	MSS_MSM8974,
 	MSS_MSM8996,
@@ -658,8 +659,9 @@ static int q6v5proc_reset(struct q6v5 *qproc)
 		}
 		goto pbl_wait;
 	} else if (qproc->version == MSS_MSM8996 ||
-		   qproc->version == MSS_MSM8998) {
-		int mem_pwr_ctl;
+		   qproc->version == MSS_MSM8998 ||
+		   qproc->version == MSS_MDM9607) {
+		int mem_pwr_ctl, j;
 
 		/* Override the ACC value if required */
 		writel(QDSP6SS_ACC_OVERRIDE_VAL,
@@ -705,7 +707,7 @@ static int q6v5proc_reset(struct q6v5 *qproc)
 		writel(val, qproc->reg_base + QDSP6SS_PWR_CTL_REG);
 
 		/* Turn on L1, L2, ETB and JU memories 1 at a time */
-		if (qproc->version == MSS_MSM8996) {
+		if (qproc->version != MSS_MSM8998) {
 			mem_pwr_ctl = QDSP6SS_MEM_PWR_CTL;
 			i = 19;
 		} else {
@@ -713,8 +715,10 @@ static int q6v5proc_reset(struct q6v5 *qproc)
 			mem_pwr_ctl = QDSP6V6SS_MEM_PWR_CTL;
 			i = 28;
 		}
+
+		j = qproc->version == MSS_MDM9607 ? 6 : 0;
 		val = readl(qproc->reg_base + mem_pwr_ctl);
-		for (; i >= 0; i--) {
+		for (; i >= j; i--) {
 			val |= BIT(i);
 			writel(val, qproc->reg_base + mem_pwr_ctl);
 			/*
@@ -724,6 +728,14 @@ static int q6v5proc_reset(struct q6v5 *qproc)
 			 */
 			val |= readl(qproc->reg_base + mem_pwr_ctl);
 			udelay(1);
+		}
+		if(j) { /* Only needed for MDM9607 (qdsp6v56_1_8_inrush_current) */
+			for (i = 0; i <= 5; i--) {
+				val |= BIT(i);
+				writel(val, qproc->reg_base + mem_pwr_ctl);
+				val |= readl(qproc->reg_base + mem_pwr_ctl);
+				udelay(1);
+			}
 		}
 		/* Remove word line clamp */
 		val = readl(qproc->reg_base + QDSP6SS_PWR_CTL_REG);
@@ -1828,6 +1840,25 @@ static int q6v5_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct rproc_hexagon_res mdm9607_mss = {
+	.hexagon_mba_image = "mba.mbn",
+	.proxy_clk_names = (char*[]){
+			"xo",
+			NULL
+	},
+	.active_clk_names = (char*[]){
+			"iface",
+			"bus",
+			"mem",
+			NULL
+	},
+	.need_mem_protection = true,
+	.has_alt_reset = false,
+	.has_mba_logs = false,
+	.has_spare_reg = false,
+	.version = MSS_MDM9607,
+};
+
 static const struct rproc_hexagon_res sc7180_mss = {
 	.hexagon_mba_image = "mba.mbn",
 	.proxy_clk_names = (char*[]){
@@ -2051,6 +2082,7 @@ static const struct rproc_hexagon_res msm8974_mss = {
 
 static const struct of_device_id q6v5_of_match[] = {
 	{ .compatible = "qcom,q6v5-pil", .data = &msm8916_mss},
+	{ .compatible = "qcom,mdm9607-mss-pil", .data = &mdm9607_mss},
 	{ .compatible = "qcom,msm8916-mss-pil", .data = &msm8916_mss},
 	{ .compatible = "qcom,msm8974-mss-pil", .data = &msm8974_mss},
 	{ .compatible = "qcom,msm8996-mss-pil", .data = &msm8996_mss},
