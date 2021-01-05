@@ -98,6 +98,21 @@
 	};
 };
 
+&pm8019_spmi_regulators {
+	pm8019_vdd_apc: s1 {
+		/*
+		 * This regulator has a minimum voltage of
+		 * 1050uV on this board, but it has the "normal
+		 * idle" value pinned at 1100uV and since undervolting
+		 * the CPU all the time isn't generally a wise idea, pin
+		 * it at 1100uV until we have proper voltage management.
+		 */
+		regulator-min-microvolt = <1100000>;
+		regulator-max-microvolt = <1350000>;
+		regulator-always-on; /* We should never let the CPU unplug itself! */
+	};
+};
+
 /* NAND ID: 0x1590aaad | 256MiB | 4-bit ECC */
 &qpic_nand {
 	status = "okay";
@@ -109,6 +124,115 @@
 
 &remoteproc_mss {
 	status = "okay";
+};
+
+&rpm_requests {
+	pm8019-regulators {
+		compatible = "qcom,rpm-pm8019-regulators";
+
+		/* S1 is managed by CPR over SPMI */
+
+		pm8019_s2: s2 {
+			regulator-min-microvolt = <1237500>; //750000
+			regulator-max-microvolt = <1237500>;
+		};
+
+		/* S3 is managed by RPMPD */
+
+		pm8019_s4: s4 {
+			regulator-min-microvolt = <1950000>; //1800000
+			regulator-max-microvolt = <1950000>;
+		};
+
+		/* L1 seems inaccessible from SPMI? 1250000-1250000 uV */
+
+		pm8019_l2: l2 {
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-system-load = <5000>;
+			regulator-allow-set-load;
+		};
+
+		pm8019_l3: l3 {
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+		};
+
+		pm8019_l4: l4 {
+			regulator-min-microvolt = <3075000>;
+			regulator-max-microvolt = <3075000>;
+			regulator-system-load = <5000>;
+			regulator-allow-set-load;
+		};
+
+		pm8019_l5: l5 {
+			regulator-min-microvolt = <2850000>; //1700000
+			regulator-max-microvolt = <2850000>;
+		};
+
+		pm8019_l6: l6 {
+			regulator-min-microvolt = <2850000>; //1700000
+			regulator-max-microvolt = <2850000>;
+		};
+
+		pm8019_l7: l7 {
+			regulator-min-microvolt = <1850000>; //1700000
+			regulator-max-microvolt = <1850000>;
+		};
+
+		pm8019_l8: l8 {
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+		};
+
+		/* L9 seems inaccessible from SPMI? 1200000-1250000 uV */
+		pm8019_l9: l9 {
+			regulator-min-microvolt = <1250000>;
+			regulator-max-microvolt = <1250000>;
+			regulator-system-load = <10000>;
+			regulator-allow-set-load;
+			regulator-always-on;
+		};
+
+		/* L10 seems inaccessible from SPMI? 1050000-1050000 uV */
+		pm8019_l10: l10 {
+			regulator-min-microvolt = <1050000>;
+			regulator-max-microvolt = <1050000>;
+		};
+
+		pm8019_l11: l11 {
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+		};
+
+		/* L12 is managed by RPMPD */
+
+		pm8019_l13: l13 {
+			regulator-min-microvolt = <2850000>; //1800000
+			regulator-max-microvolt = <2850000>;
+		};
+
+		pm8019_l14: l14 {
+			regulator-min-microvolt = <2700000>; //2650000
+			regulator-max-microvolt = <2700000>;
+		};
+
+		/*
+		 * These two are theoretically managed by SPMI
+		 * and theoretically disabled over there, but they
+		 * are up in LK, so let's vote for them here too.
+		 */
+
+		pm8019_ldo_xo: ldo-xo {
+			regulator-min-microvolt = <1740000>;
+			regulator-max-microvolt = <1740000>;
+		};
+
+		pm8019_ldo_rfclk: ldo-rfclk {
+			regulator-min-microvolt = <1740000>;
+			regulator-max-microvolt = <1740000>;
+		};
+	};
 };
 
 &tlmm {
@@ -176,4 +300,8 @@
 
 &usb_hs_phy {
 	status = "okay";
+
+	vdd-supply = <&pm8019_l9>;
+	vdda1p8-supply = <&pm8019_l2>;
+	vdda3p3-supply = <&pm8019_l4>;
 };
