@@ -251,6 +251,78 @@ static const struct regulator_desc pma8084_switch = {
 	.ops = &rpm_switch_ops,
 };
 
+static const struct regulator_desc pm8019_buck_smps_subtype8 = {
+	.linear_ranges = (struct linear_range[]) {
+		REGULATOR_LINEAR_RANGE( 1087500,  0,  69, 12500),
+	},
+	.n_linear_ranges = 1,
+	.n_voltages = 70,
+	.ops = &rpm_smps_ldo_ops,
+};
+
+static const struct regulator_desc pm8019_unknown_LDO1_9_10_12 = {
+	.linear_ranges = (struct linear_range[]) {
+		REGULATOR_LINEAR_RANGE( 1050000,  0,  4, 50000),
+	},
+	.n_linear_ranges = 1,
+	.n_voltages = 5,
+	.ops = &rpm_smps_ldo_ops,
+};
+
+static const struct regulator_desc pm8019_ldo_subtype8 = {
+	.linear_ranges = (struct linear_range[]) {
+		REGULATOR_LINEAR_RANGE( 1800000,  0,  51, 25000),
+	},
+	.n_linear_ranges = 1,
+	.n_voltages = 52,
+	.ops = &rpm_smps_ldo_ops,
+};
+
+static const struct regulator_desc pm8019_ldo_subtype9 = {
+	.linear_ranges = (struct linear_range[]) {
+		REGULATOR_LINEAR_RANGE( 1850000,  0,  1, 1000000),
+	},
+	.n_linear_ranges = 1,
+	.n_voltages = 2,
+	.ops = &rpm_smps_ldo_ops,
+};
+
+static const struct regulator_desc pm8019_ldo_subtype0xB = {
+	.linear_ranges = (struct linear_range[]) {
+		REGULATOR_LINEAR_RANGE( 1800000,  0,  0, 0),
+	},
+	.n_linear_ranges = 1,
+	.n_voltages = 1,
+	.ops = &rpm_smps_ldo_ops,
+};
+
+static const struct regulator_desc pm8019_ldo_subtype0x2A = {
+	.linear_ranges = (struct linear_range[]) {
+		REGULATOR_LINEAR_RANGE( 1800000,  0,  0, 0),
+	},
+	.n_linear_ranges = 1,
+	.n_voltages = 1,
+	.ops = &rpm_smps_ldo_ops,
+};
+
+static const struct regulator_desc pm8019_ldo_subtype0x29 = {
+	.linear_ranges = (struct linear_range[]) {
+		REGULATOR_LINEAR_RANGE( 1800000,  0,  0, 0),
+	},
+	.n_linear_ranges = 1,
+	.n_voltages = 1,
+	.ops = &rpm_smps_ldo_ops,
+};
+
+static const struct regulator_desc pm8019_ldo_subtype0x10 = {
+	.linear_ranges = (struct linear_range[]) {
+		REGULATOR_LINEAR_RANGE( 1740000,  0,  0, 0),
+	},
+	.n_linear_ranges = 1,
+	.n_voltages = 1,
+	.ops = &rpm_smps_ldo_ops,
+};
+
 static const struct regulator_desc pm8x41_hfsmps = {
 	.linear_ranges = (struct linear_range[]) {
 		REGULATOR_LINEAR_RANGE( 375000,  0,  95, 12500),
@@ -708,6 +780,31 @@ static const struct rpm_regulator_data rpm_mp5496_regulators[] = {
 	{}
 };
 
+static const struct rpm_regulator_data rpm_pm8019_regulators[] = {
+	/* S1 is managed by CPR over SPMI */
+	{ "s2", QCOM_SMD_RPM_SMPA, 2, &pm8019_buck_smps_subtype8, "vdd_s2" },
+	{ "s3", QCOM_SMD_RPM_SMPA, 3, &pm8019_buck_smps_subtype8, "vdd_s3" },
+	{ "s4", QCOM_SMD_RPM_SMPA, 4, &pm8019_buck_smps_subtype8, "vdd_s4" },
+	/* L1 is managed by RPMPD */
+	{ "l2", QCOM_SMD_RPM_LDOA, 2, &pm8019_ldo_subtype8, "vdd_l1_l2_l3" },
+	{ "l3", QCOM_SMD_RPM_LDOA, 3, &pm8019_ldo_subtype0x29, "vdd_l1_l2_l3" },
+	{ "l4", QCOM_SMD_RPM_LDOA, 4, &pm8019_ldo_subtype8, "vdd_l4_l5_l6" },
+	{ "l5", QCOM_SMD_RPM_LDOA, 5, &pm8019_ldo_subtype9, "vdd_l4_l5_l6" },
+	{ "l6", QCOM_SMD_RPM_LDOA, 6, &pm8019_ldo_subtype9, "vdd_l4_l5_l6" },
+	{ "l7", QCOM_SMD_RPM_LDOA, 7, &pm8019_ldo_subtype9, "vdd_l7" },
+	{ "l8", QCOM_SMD_RPM_LDOA, 8, &pm8019_ldo_subtype0xB, "vdd_l8_l9_l10_l11_l12_l13_l14_ldo-xo_ldo-rfclk" },
+	{ "l9", QCOM_SMD_RPM_LDOA, 9, &pm8916_pldo, "vdd_l8_l9_l10_l11_l12_l13_l14_ldo-xo_ldo-rfclk" },
+	{ "l10", QCOM_SMD_RPM_LDOA, 10, &pm8916_pldo, "vdd_l8_l9_l10_l11_l12_l13_l14_ldo-xo_ldo-rfclk"},
+	{ "l11", QCOM_SMD_RPM_LDOA, 11, &pm8019_ldo_subtype0x2A, "vdd_l8_l9_l10_l11_l12_l13_l14_ldo-xo_ldo-rfclk"},
+	/* L12 is managed by RPMPD */
+	{ "l13", QCOM_SMD_RPM_LDOA, 13, &pm8019_ldo_subtype8, "vdd_l8_l9_l10_l11_l12_l13_l14_ldo-xo_ldo-rfclk"},
+	{ "l14", QCOM_SMD_RPM_LDOA, 14, &pm8019_ldo_subtype8, "vdd_l8_l9_l10_l11_l12_l13_l14_ldo-xo_ldo-rfclk"},
+	/* These two regulators are not documented under RPM regulators downstream, but do exist in an SPMI dump */
+	{ "ldo-xo", QCOM_SMD_RPM_LDOA, 15, &pm8019_ldo_subtype0x10, "vdd_l8_l9_l10_l11_l12_l13_l14_ldo-xo_ldo-rfclk"},
+	{ "ldo-rfclk", QCOM_SMD_RPM_LDOA, 16, &pm8019_ldo_subtype0x10, "vdd_l8_l9_l10_l11_l12_l13_l14_ldo-xo_ldo-rfclk"},
+	{}
+};
+
 static const struct rpm_regulator_data rpm_pm8841_regulators[] = {
 	{ "s1", QCOM_SMD_RPM_SMPB, 1, &pm8x41_hfsmps, "vdd_s1" },
 	{ "s2", QCOM_SMD_RPM_SMPB, 2, &pm8841_ftsmps, "vdd_s2" },
@@ -1090,6 +1187,7 @@ static const struct rpm_regulator_data rpm_pms405_regulators[] = {
 
 static const struct of_device_id rpm_of_match[] = {
 	{ .compatible = "qcom,rpm-mp5496-regulators", .data = &rpm_mp5496_regulators },
+	{ .compatible = "qcom,rpm-pm8019-regulators", .data = &rpm_pm8019_regulators },
 	{ .compatible = "qcom,rpm-pm8841-regulators", .data = &rpm_pm8841_regulators },
 	{ .compatible = "qcom,rpm-pm8916-regulators", .data = &rpm_pm8916_regulators },
 	{ .compatible = "qcom,rpm-pm8941-regulators", .data = &rpm_pm8941_regulators },
