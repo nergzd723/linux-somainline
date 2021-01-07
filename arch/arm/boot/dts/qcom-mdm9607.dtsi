@@ -240,6 +240,15 @@
 			};
 		};
 
+		bimc: interconnect@400000 {
+			compatible = "qcom,mdm9607-bimc";
+			reg = <0x00401000 0x58000>;
+			#interconnect-cells = <1>;
+			clock-names = "bus", "bus_a";
+			clocks = <&rpmcc RPM_SMD_BIMC_CLK>,
+				 <&rpmcc RPM_SMD_BIMC_A_CLK>;
+		};
+
 		tsens: thermal-sensor@4a9000 {
 			compatible = "qcom,mdm9607-tsens", "qcom,tsens-v0_1";
 			reg = <0x004a9000 0x1000>, /* TM */
@@ -250,6 +259,15 @@
 			interrupts = <GIC_SPI 184 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "uplow";
 			#thermal-sensor-cells = <1>;
+		};
+
+		pcnoc: interconnect@500000 {
+			compatible = "qcom,mdm9607-pcnoc";
+			reg = <0x00500000 0x15080>;
+			#interconnect-cells = <1>;
+			clock-names = "bus", "bus_a";
+			clocks = <&rpmcc RPM_SMD_PCNOC_CLK>,
+				 <&rpmcc RPM_SMD_PCNOC_A_CLK>;
 		};
 
 		cryptobam: dma@704000 {
