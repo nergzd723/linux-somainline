@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 
 icc-bcm-voter-objs			:= bcm-voter.o
+qnoc-mdm9607-objs			:= mdm9607.o
 qnoc-msm8916-objs			:= msm8916.o
 qnoc-msm8974-objs			:= msm8974.o
 icc-osm-l3-objs				:= osm-l3.o
@@ -13,6 +14,7 @@ qnoc-sm8250-objs			:= sm8250.o
 icc-smd-rpm-objs			:= smd-rpm.o
 
 obj-$(CONFIG_INTERCONNECT_QCOM_BCM_VOTER) += icc-bcm-voter.o
+obj-$(CONFIG_INTERCONNECT_QCOM_MDM9607) += qnoc-mdm9607.o
 obj-$(CONFIG_INTERCONNECT_QCOM_MSM8916) += qnoc-msm8916.o
 obj-$(CONFIG_INTERCONNECT_QCOM_MSM8974) += qnoc-msm8974.o
 obj-$(CONFIG_INTERCONNECT_QCOM_OSM_L3) += icc-osm-l3.o
