@@ -1848,6 +1848,30 @@ static int spmi_regulator_of_parse(struct device_node *node,
 	return 0;
 }
 
+static const struct spmi_regulator_data pm8019_regulators[] = { /* HACK! */
+	{ "s1", 0x1400, "vdd_s1", },
+	{ "s2", 0x1700, "vdd_s2", },
+	{ "s3", 0x1a00, "vdd_s3", },
+	{ "s4", 0x1d00, "vdd_s4", },
+	{ "l1", 0x4000, "vdd_l1_l3", },
+	{ "l2", 0x4100, "vdd_l2", },
+	{ "l3", 0x4200, "vdd_l1_l3", },
+	{ "l4", 0x4300, "vdd_l4_l5_l6", },
+	{ "l5", 0x4400, "vdd_l4_l5_l6", },
+	{ "l6", 0x4500, "vdd_l4_l5_l6", },
+	{ "l7", 0x4600, "vdd_l7", },
+	{ "l8", 0x4700, "vdd_l8_l11_l14_ldo-xo_ldo-rfclk", },
+	{ "l9", 0x4800, "vdd_l9_l10_l12_l13", },
+	{ "l10", 0x4900, "vdd_l9_l10_l12_l13", },
+	{ "l11", 0x4a00, "vdd_l8_l11_l14_ldo-xo_ldo-rfclk", },
+	{ "l12", 0x4b00, "vdd_l9_l10_l12_l13", },
+	{ "l13", 0x4c00, "vdd_l9_l10_l12_l13", },
+	{ "l14", 0x4d00, "vdd_l8_l11_l14_ldo-xo_ldo-rfclk", },
+	{ "ldo-xo", 0x4e00, "vdd_l8_l11_l14_ldo-xo_ldo-rfclk", },
+	{ "ldo-rfclk", 0x4f00, "vdd_l8_l11_l14_ldo-xo_ldo-rfclk", },
+	{ }
+};
+
 static const struct spmi_regulator_data pm8941_regulators[] = {
 	{ "s1", 0x1400, "vdd_s1", },
 	{ "s2", 0x1700, "vdd_s2", },
@@ -2085,6 +2109,7 @@ static const struct spmi_regulator_data pms405_regulators[] = {
 static const struct of_device_id qcom_spmi_regulator_match[] = {
 	{ .compatible = "qcom,pm8004-regulators", .data = &pm8004_regulators },
 	{ .compatible = "qcom,pm8005-regulators", .data = &pm8005_regulators },
+	{ .compatible = "qcom,pm8019-regulators", .data = &pm8019_regulators },
 	{ .compatible = "qcom,pm8841-regulators", .data = &pm8841_regulators },
 	{ .compatible = "qcom,pm8916-regulators", .data = &pm8916_regulators },
 	{ .compatible = "qcom,pm8941-regulators", .data = &pm8941_regulators },
