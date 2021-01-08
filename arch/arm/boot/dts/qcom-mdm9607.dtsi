@@ -9,6 +9,8 @@
 #include <dt-bindings/clock/qcom,rpmcc.h>
 #include <dt-bindings/power/qcom-rpmpd.h>
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interconnect/qcom,mdm9607.h>
+
 / {
 	#address-cells = <1>;
 	#size-cells = <1>;
@@ -552,6 +554,100 @@
 					output-high;
 				};
 			};
+
+			sdhci1_pins_active: sdhci1-pins-active {
+				cmd {
+					pins = "sdc1_cmd";
+					drive-strength = <10>;
+					bias-pull-up;
+				};
+
+				clk {
+					pins = "sdc1_clk";
+					drive-strength = <16>;
+					bias-disable;
+				};
+
+				data {
+					pins = "sdc1_data";
+					drive-strength = <10>;
+					bias-pull-up;
+				};
+			};
+
+			sdhci1_pins_sleep: sdhci1-pins-sleep {
+				cmd {
+					pins = "sdc1_cmd";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+
+				clk {
+					pins = "sdc1_clk";
+					drive-strength = <2>;
+					bias-disable;
+				};
+
+				data {
+					pins = "sdc1_data";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+			};
+
+			sdhci2_pins_active: sdhci2-pins-active {
+				cmd {
+					pins = "sdc2_cmd";
+					drive-strength = <10>;
+					bias-pull-up;
+				};
+
+				clk {
+					pins = "sdc2_clk";
+					drive-strength = <16>;
+					bias-disable;
+				};
+
+				data {
+					pins = "sdc2_data";
+					drive-strength = <10>;
+					bias-pull-up;
+				};
+
+				cd {
+					pins = "gpio26";
+					function = "gpio";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+			};
+
+			sdhci2_pins_sleep: sdhci2-pins-sleep {
+				cmd {
+					pins = "sdc2_cmd";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+
+				clk {
+					pins = "sdc2_clk";
+					drive-strength = <2>;
+					bias-disable;
+				};
+
+				data {
+					pins = "sdc2_data";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+
+				cd {
+					pins = "gpio26";
+					function = "gpio";
+					drive-strength = <2>;
+					bias-disable;
+				};
+			};
 		};
 
 		gcc: clock-controller@1800000 {
@@ -646,6 +742,91 @@
 
 				label = "modem";
 			};
+		};
+
+		sdhc_1: sdhci@7824000 {
+			compatible = "qcom,sdhci-msm-v4";
+			reg = <0x07824900 0x200>, <0x07824000 0x800>;
+			reg-names = "hc_mem", "core_mem";
+
+			interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 138 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "hc_irq", "pwr_irq";
+			clocks = <&gcc GCC_SDCC1_APPS_CLK>,
+				 <&gcc GCC_SDCC1_AHB_CLK>,
+				 <&xo_board>;
+			clock-names = "core", "iface", "xo";
+			bus-width = <4>;
+
+			pinctrl-names = "default", "sleep";
+			pinctrl-0 = <&sdhci1_pins_active>;
+			pinctrl-1 = <&sdhci1_pins_sleep>;
+			interconnects = <&pcnoc MASTER_SDCC_1 &bimc SLAVE_EBI>;
+			power-domains = <&rpmpd MDM9607_VDDCX>;
+			operating-points-v2 = <&sdhc_opp_table>;
+			status = "disabled";
+
+			sdhc_opp_table: sdhc1-opp-table {
+				 compatible = "operating-points-v2";
+
+				 opp-400000 {
+					opp-hz = /bits/ 64 <400000>;
+					required-opps = <&rpmpd_opp_ret>;
+					opp-peak-kBps = <3200>;
+					opp-avg-kBps = <1600>;
+				 };
+
+				 opp-20000000 {
+					opp-hz = /bits/ 64 <20000000>;
+					required-opps = <&rpmpd_opp_svs>;
+					opp-peak-kBps = <160000>;
+					opp-avg-kBps = <80000>;
+				 };
+
+				 opp-50000000 {
+					opp-hz = /bits/ 64 <50000000>;
+					required-opps = <&rpmpd_opp_svs_plus>;
+					opp-peak-kBps = <400000>;
+					opp-avg-kBps = <200000>;
+				 };
+
+				 opp-100000000 {
+					opp-hz = /bits/ 64 <100000000>;
+					required-opps = <&rpmpd_opp_nom>;
+					opp-peak-kBps = <800000>;
+					opp-avg-kBps = <400000>;
+				 };
+
+				 opp-200000000 {
+					opp-hz = /bits/ 64 <200000000>;
+					required-opps = <&rpmpd_opp_turbo>;
+					opp-peak-kBps = <800000>;
+					opp-avg-kBps = <800000>;
+				 };
+			};
+		};
+
+		sdhc_2: sdhci@7864000 {
+			compatible = "qcom,sdhci-msm-v4";
+			reg = <0x07864900 0x200>, <0x07864000 0x800>;
+			reg-names = "hc_mem", "core_mem";
+
+			interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 221 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "hc_irq", "pwr_irq";
+			clocks = <&gcc GCC_SDCC2_APPS_CLK>,
+				 <&gcc GCC_SDCC2_AHB_CLK>,
+				 <&xo_board>;
+			clock-names = "core", "iface", "xo";
+			bus-width = <4>;
+
+			pinctrl-names = "default", "sleep";
+			pinctrl-0 = <&sdhci2_pins_active>;
+			pinctrl-1 = <&sdhci2_pins_sleep>;
+			interconnects = <&pcnoc MASTER_SDCC_2 &bimc SLAVE_EBI>;
+			power-domains = <&rpmpd MDM9607_VDDCX>;
+			operating-points-v2 = <&sdhc_opp_table>;
+			status = "disabled";
 		};
 
 		blsp1_dma: dma-controller@7884000 {
